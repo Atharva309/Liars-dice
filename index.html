@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liar's Dice Invitational</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a late-night dice hall tournament — playful, loud, but every number honest.
+   IDEA: the page is a tournament scoreboard pinned above a felt dice table.
+   PICTURE: the live dice table you play on, with real SVG dice, and the leaderboard as giant bars.
+   COLOUR and TYPE: cobalt felt, bone-white dice, one hot coral; Archivo Black titles, Archivo text.
+   LAYOUT: title + champion line, then the table, then leaderboard, head-to-head grid, curves, personalities. */
+:root{color-scheme:light dark;
+--bg:light-dark(#f6f7fb,#0a1236);--ink:light-dark(#0b1440,#eef1ff);--mut:light-dark(#4a5580,#a9b3e0);
+--felt:light-dark(#1d3fd6,#14298f);--felt2:light-dark(#1634b8,#0f2070);--card:light-dark(#fff,#111c4d);--line:light-dark(#dde2f2,#24316e);
+--hot:#ff5a4e;--bone:#fbfaf7;--pip:#0b1440}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Archivo,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Archivo Black",Archivo,sans-serif;font-weight:400;line-height:1.05;text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,6vw,52px)}h2{font-size:clamp(26px,3.4vw,34px);margin-bottom:6px}h3{font-size:19px}
+.band{padding:clamp(28px,4vw,64px) max(5vw,16px)}.wrap{max-width:1240px;margin:0 auto}
+.lede{max-width:68ch;color:var(--mut);margin:10px 0 0;font-size:17px}
+.sub{color:var(--mut);margin:0 0 22px;max-width:70ch}
+header.band{padding-bottom:18px}
+.champ{display:inline-flex;gap:10px;align-items:center;margin-top:16px;background:var(--hot);color:#fff;padding:8px 14px;border-radius:999px;font-weight:700}
+/* table */
+.felt{background:radial-gradient(120% 90% at 50% 0%,var(--felt),var(--felt2));color:#fff;border-radius:22px;padding:clamp(16px,3vw,30px);box-shadow:0 18px 40px -20px #0b144099,inset 0 0 0 6px #ffffff14}
+.tabletop{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px}
+@media(max-width:860px){.tabletop{grid-template-columns:minmax(0,1fr)}}
+.seat{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.seat .who{font-weight:700;min-width:7em}
+.dice{display:flex;gap:10px;flex-wrap:wrap}.die{width:58px;height:58px;filter:drop-shadow(0 6px 6px #0006)}
+.die.lost{opacity:.18}.die.hit rect{stroke:var(--hot);stroke-width:6}
+.pot{margin:18px 0;padding:16px;border-radius:16px;background:#ffffff12;min-height:118px}
+.bidbig{font-family:"Archivo Black";font-size:clamp(30px,5vw,44px);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bidbig .die{width:46px;height:46px}
+.msg{font-weight:600;margin-top:6px;min-height:1.6em}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+button,select{font:600 16px Archivo,sans-serif;min-height:44px;border-radius:12px;border:0;padding:0 16px;cursor:pointer}
+button:focus-visible,select:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+.b-main{background:var(--bone);color:var(--pip)}.b-hot{background:var(--hot);color:#fff}.b-ghost{background:#ffffff1f;color:#fff}
+button:disabled{opacity:.35;cursor:not-allowed}
+.qty button{min-width:44px;padding:0;background:#ffffff1f;color:#fff}.qty button[aria-pressed=true]{background:var(--bone);color:var(--pip)}
+.faces button{padding:4px;background:transparent;min-height:50px}.faces button .die{width:42px;height:42px}
+.faces button[aria-pressed=true]{background:#ffffff33}
+.log{list-style:none;margin:0;padding:0;max-height:300px;overflow:auto;font-size:15px}
+.log li{padding:6px 0;border-bottom:1px solid #ffffff1f;display:flex;gap:8px;justify-content:space-between}
+.side{background:#0b144033;border-radius:16px;padding:16px}
+.adv{display:grid;gap:6px;margin-top:8px;font-size:15px}.adv div{display:flex;justify-content:space-between;gap:8px}
+.adv b{white-space:nowrap}
+.rec{font-size:14px;color:#dfe5ff;margin-top:8px}
+label.sw{display:flex;gap:8px;align-items:center;font-size:15px;margin-top:12px}
+/* leaderboard */
+.lb{display:grid;gap:10px}
+.seg2{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px}.seg2 button{background:var(--card);color:var(--ink);border:1px solid var(--line)}.seg2 button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row{display:grid;grid-template-columns:2.2em minmax(0,10.5em) minmax(0,1fr) 3.6em;gap:12px;align-items:center}
+.row .rk{font-family:"Archivo Black";font-size:22px;color:var(--mut)}
+.row .nm b{display:block}.row .nm span{font-size:13px;color:var(--mut)}
+.bar{height:30px;background:var(--line);border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;border-radius:8px}
+.row .elo{font-family:"Archivo Black";text-align:right;white-space:nowrap}
+@media(max-width:600px){.row{grid-template-columns:1.6em minmax(0,1fr) 3.6em}.row .bar{grid-column:2/4}}
+/* heatmap */
+.hm{display:grid;gap:3px;font-size:13px}
+.hm div{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:6px;font-variant-numeric:tabular-nums}
+.hm .h{background:transparent;color:var(--mut);font-weight:600;justify-content:flex-end;padding-right:6px;text-align:right}
+.hm .c{writing-mode:vertical-rl;transform:rotate(180deg);min-height:96px;justify-content:flex-start;color:var(--mut);font-weight:600;background:transparent}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--mut);margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+.fig{position:relative;min-height:340px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px}@media(max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h3{display:flex;gap:10px;align-items:center}.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.card p{margin:6px 0 10px;color:var(--mut);font-size:15px}
+.meter{display:grid;grid-template-columns:7.5em minmax(0,1fr) 3em;gap:8px;align-items:center;font-size:14px;margin:4px 0}
+.meter .t{height:10px;background:var(--line);border-radius:5px;overflow:hidden}.meter .t i{display:block;height:100%}
+.meter b{text-align:right;font-variant-numeric:tabular-nums}
+.alt{background:var(--card);border-block:1px solid var(--line)}
+.note{font-size:13px;color:var(--mut);margin-top:10px}
+.scroll{overflow-x:auto}
+@media(prefers-reduced-motion:no-preference){.die.roll{animation:roll .5s cubic-bezier(.3,1.6,.5,1)}@keyframes roll{from{transform:rotate(-200deg) scale(.4)}}}
+
+/* TABLE VIEW: a first-person seat in a lamp-lit dice hall. Always night: the lamp and neon are the light. */
+.nav{position:sticky;top:0;z-index:20;display:flex;gap:6px;padding:10px max(5vw,16px);background:var(--bg);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.nav a{font:700 15px Archivo,sans-serif;color:var(--ink);text-decoration:none;padding:10px 16px;border-radius:999px;min-height:44px;display:inline-flex;align-items:center}
+.nav a[aria-current=page]{background:var(--ink);color:var(--bg)}
+.nav a:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+.cta{display:inline-flex;align-items:center;min-height:44px;margin:16px 10px 0 0;padding:0 18px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700;text-decoration:none}
+#view-table{position:relative;height:calc(100vh - 65px);height:calc(100dvh - 65px);min-height:580px;background:#070919;overflow:hidden;color:#fff;font:16px/1.4 Archivo,system-ui,sans-serif}
+#view-table button,#view-table select,#view-table summary{font:600 16px Archivo,system-ui,sans-serif;min-height:44px;border-radius:12px;border:0;cursor:pointer}
+#view-table :focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+#stage{position:absolute;inset:0}#stage canvas{display:block;width:100%;height:100%}
+#stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,#040512b3 100%)}
+#overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag,.bubble{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform}
+.tag{font-size:13px;font-weight:700;background:#0b1440e6;padding:4px 10px;border-radius:999px;display:flex;gap:6px;align-items:center;border:2px solid transparent}
+.tag i{width:9px;height:9px;border-radius:50%}.tag b{font-weight:700}
+.tag .pips{display:inline-flex;gap:3px}.tag .pips s{width:9px;height:9px;border-radius:2px;background:#fbfaf7;display:block}
+.tag.on{border-color:#ffd08a;background:#1a2466}.tag.out{opacity:.5}.tag.out b{text-decoration:line-through}
+.bb{position:relative;background:#fbfaf7;color:#0b1440;font:400 19px "Archivo Black",Archivo,sans-serif;padding:7px 13px;border-radius:14px;box-shadow:0 8px 20px #0007;display:flex;align-items:center;gap:6px;transform-origin:50% 100%;animation:pop .28s cubic-bezier(.3,1.5,.5,1)}
+.bb::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-top-color:#fbfaf7;border-bottom:0}
+.bb svg{width:26px;height:26px;display:block}
+.bubble[hidden]{display:none}
+.bubble.past .bb{opacity:.6;transform:scale(.76);animation:none;box-shadow:none}
+.bubble.liar .bb{background:var(--hot);color:#fff;font-size:24px}.bubble.liar .bb::after{border-top-color:var(--hot)}
+.bubble.think .bb{padding:12px 14px;gap:5px;opacity:.92}.bubble.think i{width:7px;height:7px;border-radius:50%;background:#0b1440;animation:dot 1s infinite}.bubble.think i:nth-child(2){animation-delay:.15s}.bubble.think i:nth-child(3){animation-delay:.3s}
+@keyframes pop{from{transform:scale(.5);opacity:0}}@keyframes dot{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.tb{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:4}
+.tb>*{pointer-events:auto}
+.claim{background:#0b1440eb;border-radius:14px;padding:8px 14px;min-width:148px}
+.claim small{display:block;font-size:13px;color:#b9c2f0}
+.claim b{font:400 22px/1.2 "Archivo Black",Archivo,sans-serif;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.claim b svg{width:28px;height:28px}.claim b span{font:600 15px Archivo,sans-serif;color:#dfe5ff}
+.tools{display:flex;gap:8px}
+.tbtn,#view-table summary.tbtn{background:#0b1440eb;color:#fff;padding:0 14px;display:inline-flex;align-items:center;list-style:none}
+summary.tbtn::-webkit-details-marker{display:none}
+.menu{position:relative}.menu .pop{position:absolute;right:0;top:52px;background:#111c4d;border-radius:14px;padding:8px;display:grid;gap:6px;min-width:210px;box-shadow:0 20px 40px #000a}
+.menu .pop button{background:#ffffff14;color:#fff;text-align:left;padding:0 12px}
+.dock{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:min(980px,calc(100% - 20px));display:grid;gap:8px;justify-items:center;z-index:3;pointer-events:none}.dock>*{pointer-events:auto}
+.verdict{background:#fbfaf7;color:#0b1440;border-radius:16px;padding:10px 20px;text-align:center;max-width:min(100%,560px);box-shadow:0 12px 30px #0009;animation:pop .25s;transform-origin:50% 100%}
+.verdict b{font:400 clamp(21px,3.4vw,28px)/1.15 "Archivo Black",Archivo,sans-serif;display:block}.verdict span{font-size:15px;display:block;margin-top:2px}
+.verdict.f{background:var(--hot);color:#fff}.verdict.t{background:#ffd08a}
+.verdict[hidden]{display:none}
+.logp{position:absolute;top:74px;left:10px;z-index:3;width:min(290px,72vw);max-height:42%;overflow:auto;background:#0b1440f2;border-radius:14px;padding:6px 12px;font-size:14px}
+.logp[hidden]{display:none}.logp ul{list-style:none;margin:0;padding:0}.logp li{padding:5px 0;border-bottom:1px solid #ffffff1a;display:flex;justify-content:space-between;gap:10px}.logp li.hd{font-weight:700;color:#ffd08a}.logp li b{white-space:nowrap}
+.hud{min-width:min(600px,100%);max-width:100%;background:#0b1440eb;border-radius:18px;padding:12px 14px;display:grid;gap:10px;border:2px solid transparent}
+.hud.myturn{border-color:#ffd08a}
+.hud .top{display:flex;gap:14px;align-items:center;justify-content:space-between}
+.msg{font-size:16px;line-height:1.38}.msg em{font-style:normal;font-weight:700;color:#ffd08a}
+.mine{display:flex;gap:5px;align-items:center;flex:none}.mine svg{width:32px;height:32px;display:block}
+.hidn{display:grid;grid-template-rows:repeat(3,9px);grid-auto-flow:column;gap:3px}.hidn s{width:9px;height:9px;border-radius:2px;background:#ffffff61;display:block}
+.lbl{font-size:13px;color:#b9c2f0;flex:none}
+.build{display:grid;gap:10px}.build[hidden]{display:none}
+.pickrow{display:flex;gap:8px 20px;flex-wrap:wrap}.actrow{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap}.actrow .acts{flex:1 1 380px}
+.line{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center}
+.line>div{display:flex;gap:6px;overflow-x:auto;padding:2px}
+.hud .line button{background:#ffffff1f;color:#fff;min-width:46px;flex:none;padding:0 6px}
+.hud .line button[aria-pressed=true]{background:#fbfaf7;color:#0b1440}.hud .line button:disabled{opacity:.25;cursor:not-allowed}
+.hud .line button.fc{padding:0 4px}.hud .fc svg{width:36px;height:36px;display:block}
+.odds{display:flex;align-items:center;gap:10px;font-size:14px;color:#dfe5ff;flex:1 1 300px}.odds[hidden]{display:none}
+.odds .bar{flex:none;width:110px;height:8px;border-radius:4px;background:#ffffff26;overflow:hidden}.odds i{display:block;height:100%;background:#ffd08a;border-radius:4px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts button{padding:0 16px;flex:1 1 180px}.acts button[hidden]{display:none}
+.go{background:#fbfaf7;color:#0b1440}.liarb{background:var(--hot);color:#fff}.plain{background:#ffffff26;color:#fff}
+.acts button:disabled{opacity:.35;cursor:not-allowed}
+.lobby,.help{position:absolute;inset:0;display:grid;place-items:center;background:#070919b3;z-index:5;padding:14px;overflow:auto}
+.lobby[hidden],.help[hidden]{display:none}
+.box{background:#111c4d;border-radius:20px;padding:clamp(16px,3vw,28px);width:min(580px,100%);box-shadow:0 30px 60px #0009}
+.box h2{color:#fff;font-size:clamp(24px,4vw,30px);margin-bottom:10px}
+.how{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:8px;color:#d6dcfa;font-size:15px;counter-reset:n}
+.how li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;counter-increment:n}
+.how li::before{content:counter(n);width:28px;height:28px;border-radius:50%;background:#ffd08a;color:#0b1440;font-weight:700;display:grid;place-items:center}
+.how b{color:#fff}.how svg{width:20px;height:20px;vertical-align:-4px}
+.segrow{display:flex;gap:12px;align-items:center;font-weight:600;margin-bottom:12px}.seg{display:flex;gap:6px;flex:1}
+#view-table .seg button{flex:1;background:#ffffff1a;color:#fff;display:grid;place-items:center;padding:4px 6px;line-height:1.1;font-size:18px}.seg small{font-size:12px;font-weight:400;color:#c3cbf0}
+#view-table .seg button[aria-pressed=true]{background:#fbfaf7;color:#0b1440}.seg button[aria-pressed=true] small{color:#3a4680}
+.seatpick{display:grid;gap:8px;margin-bottom:12px}
+.n{display:none}
+.seatpick label{display:grid;grid-template-columns:4.2em minmax(0,1fr) 5em;gap:2px 10px;align-items:center;font-weight:600}
+.seatpick select{background:#fbfaf7;color:#0b1440;padding:0 10px}
+.seatpick b{font-size:13px;color:#c3cbf0;font-weight:600;text-align:right;white-space:nowrap}
+.seatpick small{grid-column:2/4;font-size:13px;color:#a9b3e0;font-weight:400}
+.chk{display:flex;gap:10px;align-items:center;font-size:15px;color:#d6dcfa;margin-bottom:14px;min-height:32px}.chk input{width:20px;height:20px;flex:none}
+.deal{background:var(--hot);color:#fff;padding:0 22px;font-size:17px!important;min-height:48px!important}
+.deal:disabled{opacity:.6}
+.small{font-size:13px;color:#a9b3e0;margin-top:12px}
+@media(max-width:640px){
+ .dock{bottom:6px}.hud{padding:10px;gap:8px}.pickrow{display:grid}.msg{font-size:15px}.hud .top{align-items:flex-start;flex-wrap:wrap;gap:6px 14px}.mine{flex:1 1 100%}.mine .hidn{display:none}.mine svg{width:27px;height:27px}
+ .tag{font-size:12px;padding:3px 8px;gap:5px}.tag .pips{gap:2px}.tag .pips s{width:6px;height:6px}
+ .hud.myturn .mine,.w{display:none}.n{display:inline}.acts button{flex:1 1 130px;line-height:1.15;padding:6px 10px}.actrow .acts{flex:1 1 100%}.odds{flex:1 1 100%}
+ .line{grid-template-columns:3.6em minmax(0,1fr)}.line>div{gap:4px}.hud .line button{min-width:40px}.hud .line button.fc{padding:0 2px}.hud .fc svg{width:34px;height:34px}.claim b{font-size:19px}.bb{font-size:16px}.bubble.liar .bb{font-size:19px}.tbtn{padding:0 11px}
+ .seatpick label{grid-template-columns:3.6em minmax(0,1fr) 4.4em}
+}
+@media(prefers-reduced-motion:reduce){.bb,.verdict{animation:none}.bubble.think i{animation:none;opacity:.7}}
+</style></head><body>
+<nav class="nav" aria-label="Views"><a href="#" data-v="tour">Tournament</a><a href="#table" data-v="table">Play at the table</a></nav>
+<div id="view-tour">
+<header class="band"><div class="wrap">
+<h1>The Liar's Dice Invitational</h1>
+<p class="lede">Six AIs that each learned to bluff in a different way, plus two warm-up bots. They played each other thousands of times, one-on-one and four to a table. Then it's your turn.</p>
+<a class="cta" href="#table">Play at the table</a><div class="champ" id="champ"></div>
+</div></header>
+
+
+
+<section class="band alt"><div class="wrap grid2">
+<div><h2>One-on-one standings</h2>
+<p class="sub">Elo rating fitted from every game of the round robin. A 100-point gap means the higher-rated bot wins about 64% of games.</p>
+<div class="lb" id="lb"></div></div>
+<div><h2>Four at a table</h2>
+<p class="sub">Share of four-player games won, with random seatings. An average player wins 25%. For 3 and 5 dice each the AIs were retrained to choose from a shortlist of sensible claims using the odds of each.</p>
+<div class="seg2" id="seg4"><button data-m="2">2 dice each</button><button data-m="3">3 dice</button><button data-m="5">5 dice</button></div>
+<div class="lb" id="lb4"></div></div>
+</div></section>
+
+<section class="band"><div class="wrap grid2">
+<div><h2>Head to head</h2><p class="sub">Win rate for the bot in each row against the bot in each column.</p>
+<div class="scroll"><div class="hm" id="hm"></div></div>
+<div class="legend"><span><i style="background:var(--hot)"></i>row wins more</span><span><i style="background:#1d3fd6"></i>column wins more</span></div></div>
+<div><h2>How fast they learned</h2><p class="sub">Win rate against the Math Bot during training. The x-axis is each agent's share of its own training run, because they count progress in different units.</p>
+<div class="fig" id="curveFig"><svg id="curve" role="img" aria-label="Training curves"></svg></div>
+<div class="legend" id="curveLegend"></div></div>
+</div></section>
+
+<section class="band alt"><div class="wrap">
+<h2>Table personalities</h2>
+<p class="sub">From every bid and call in the tournament. A "bluff" here means a bid the bidder's own dice say is more likely false than true.</p>
+<div class="cards" id="cards"></div>
+<p class="note">These personality numbers come from the one-on-one tournament. Trained by self-play on a 2-dice-each game. The Thinker doesn't train; it runs 2,000 simulated futures per move (fewer in the browser so it stays snappy). Matches involving the Thinker were 400 games, the rest 2,000, so its head-to-head numbers are ±5 points.</p>
+</div></section>
+
+</div>
+
+<div id="view-table" hidden>
+<div id="stage" aria-label="3D view of the dice table"></div>
+<div id="overlay"></div>
+<div class="tb">
+ <div class="claim" id="claim" aria-live="polite"><small>Liar's Dice</small><b>Take a seat</b></div>
+ <div class="tools"><button class="tbtn" id="helpBtn"><span class="w">How to play</span><span class="n">Help</span></button>
+  <details class="menu" id="menu"><summary class="tbtn">Menu</summary><div class="pop">
+   <button id="coachBtn">Coach tips: on</button><button id="sndBtn">Sound: on</button><button id="spdBtn">Speed: normal</button><button id="logBtn">Show table log</button><button id="lobbyBtn">Change opponents</button>
+  </div></details></div>
+</div>
+<aside class="logp" id="logp" hidden aria-label="Table log"><ul id="log4"></ul></aside>
+<div class="dock" id="dock">
+<div class="verdict" id="verdict" hidden aria-live="polite"></div>
+<div class="hud" id="hud">
+ <div class="top"><div class="msg" id="msg4" aria-live="polite">Setting the table…</div><div class="mine" id="mine"></div></div>
+ <div class="build" id="build" hidden>
+  <div class="pickrow"><div class="line"><span class="lbl"><span class="w" id="ofall">Of all 8 dice, </span>at least</span><div id="qty4"></div></div>
+  <div class="line"><span class="lbl">show</span><div id="face4"></div></div></div>
+  <div class="actrow"><div class="odds" id="odds"><span class="bar"><i id="oddsbar"></i></span><span id="oddstxt"></span></div>
+  <div class="acts"><button class="go" id="bid4">Claim</button><button class="liarb" id="liar4">Liar!</button></div></div>
+ </div>
+ <div class="acts"><button class="go" id="next4" hidden>Next round</button><button class="go" id="again4" hidden>Play again</button></div>
+</div>
+</div>
+<div class="lobby" id="lobby"><div class="box">
+ <h2>Take a seat</h2>
+ <ol class="how">
+  <li><span><b>Everyone hides their dice under a cup.</b> You only see your own.</span></li>
+  <li><span><b>Claim or challenge.</b> Turns go clockwise. On your turn, claim how many dice of one number are on the <b>whole table, counting every cup</b>, like "at least 3 fives". Each claim must beat the last one. Or call <b>Liar!</b> on the claim before you.</span></li>
+  <li><span><b>Cups up.</b> If the claim was true, the caller loses a die. If it was false, the claimer does. Last player with dice wins.</span></li>
+ </ol>
+ <div class="segrow"><span>Dice each</span><div class="seg" id="diceSeg"><button data-d="2">2<small>Quick</small></button><button data-d="3">3<small>Medium</small></button><button data-d="5">5<small>Classic</small></button></div></div>
+ <div class="seatpick" id="seatpick"></div>
+ <label class="chk"><input type="checkbox" id="coachChk" checked> Coach tips: show the odds and a suggested move on my turn</label>
+ <button class="deal" id="dealBtn">Deal me in</button>
+ <div class="small" id="lobbyNote"></div>
+</div></div>
+<div class="help" id="help" hidden><div class="box">
+ <h2>How to play</h2>
+ <ol class="how">
+  <li><span><b>Hidden dice.</b> Each player rolls their dice under a cup: 2, 3 or 5 each, your choice. You see only yours, on the rack in front of you.</span></li>
+  <li><span><b>A claim is about every die on the table.</b> "At least 3 fives" means: counting all cups together, three or more dice show a five. You don't need to hold them yourself, which is why you can claim more dice than you own.</span></li>
+  <li><span><b>Raise it.</b> A new claim must be higher: more dice ("3 fives" to "4 twos"), or the same count with a higher number ("3 fives" to "3 sixes").</span></li>
+  <li><span><b>Or call Liar!</b> on the claim just before yours. All cups lift and the dice are counted.</span></li>
+  <li><span><b>Someone loses a die, and nobody ever gains one.</b> Claim true: the caller loses one. Claim false: the claimer loses one. No dice left and you're out. Last player in wins.</span></li>
+  <li><span><b>Rule of thumb.</b> Each hidden die shows any given number 1 time in 6. Divide the hidden dice by 6 to see how many of a number to expect out there, then add your own.</span></li>
+ </ol>
+ <button class="deal" id="helpClose">Got it</button>
+</div></div>
+</div>
+<script>
+window.LD_WIN={"2":{"cfr":0.211,"dqn":0.301,"ppo":0.38,"nfsp":0.253,"ismcts":0.223,"mc":0.32,"math":0.306,"random":0.002},"3":{"cfr":0.301,"dqn":0.38,"ppo":0.359,"nfsp":0.276,"ismcts":0.203,"mc":0.316,"math":0.161,"random":0},"5":{"cfr":0.255,"dqn":0.416,"ppo":0.37,"nfsp":0.284,"ismcts":0.184,"mc":0.334,"math":0.15,"random":0}};
+{
+const views={tour:document.getElementById("view-tour"),table:document.getElementById("view-table")};let loading=null;
+const load=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+function route(){const t=location.hash==="#table"?"table":"tour";views.tour.hidden=t!=="tour";views.table.hidden=t!=="table";
+ document.querySelectorAll(".nav a").forEach(a=>a.setAttribute("aria-current",a.dataset.v===t?"page":"false"));
+ if(t==="table"){if(window.LDTable)window.LDTable.resume();else if(!loading)loading=load("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js").then(()=>load("table.js")).catch(()=>{loading=null;document.getElementById("msg4").textContent="Couldn't load the 3D table. Check your connection and reopen this tab."})}
+ else if(window.LDTable)window.LDTable.pause()}
+addEventListener("hashchange",route);route();
+}
+</script>
+
+<script>
+const T={"names":{"cfr":"Game Theorist","dqn":"Exploiter","ppo":"Gut Player","nfsp":"Hybrid","ismcts":"Thinker","mc":"Old-Schooler","math":"Math Bot","random":"Random Bot"},"results":{"cfr|dqn":[1196,2000],"cfr|ppo":[1125,2000],"cfr|nfsp":[1135,2000],"cfr|ismcts":[211,400],"cfr|mc":[1173,2000],"cfr|math":[1100,2000],"cfr|random":[1937,2000],"dqn|ppo":[917,2000],"dqn|nfsp":[947,2000],"dqn|ismcts":[163,400],"dqn|mc":[1072,2000],"dqn|math":[777,2000],"dqn|random":[1921,2000],"ppo|nfsp":[1022,2000],"ppo|ismcts":[187,400],"ppo|mc":[1095,2000],"ppo|math":[1102,2000],"ppo|random":[1903,2000],"nfsp|ismcts":[182,400],"nfsp|mc":[1040,2000],"nfsp|math":[834,2000],"nfsp|random":[1896,2000],"ismcts|mc":[213,400],"ismcts|math":[219,400],"ismcts|random":[385,400],"mc|math":[820,2000],"mc|random":[1940,2000],"math|random":[1978,2000]},"elo":{"cfr":1611,"dqn":1540,"ppo":1577,"nfsp":1554,"ismcts":1594,"mc":1538,"math":1591,"random":994},"stats":{"cfr":{"bids":28724,"bluffs":13507,"calls":15554,"calls_right":9233,"call_chances":31263,"bluffs_caught":5017,"bluffs_called":7032},"dqn":{"bids":32063,"bluffs":19314,"calls":13766,"calls_right":8235,"call_chances":31759,"bluffs_caught":8138,"bluffs_called":9900},"ppo":{"bids":25545,"bluffs":9165,"calls":17839,"calls_right":9294,"call_chances":29789,"bluffs_caught":3983,"bluffs_called":5051},"nfsp":{"bids":31368,"bluffs":17809,"calls":14255,"calls_right":8300,"call_chances":31614,"bluffs_caught":7406,"bluffs_called":9168},"ismcts":{"bids":5406,"bluffs":2000,"calls":4084,"calls_right":2039,"call_chances":6402,"bluffs_caught":769,"bluffs_called":1117},"mc":{"bids":29112,"bluffs":16714,"calls":13410,"calls_right":8008,"call_chances":28493,"bluffs_caught":8260,"bluffs_called":9584},"math":{"bids":26766,"bluffs":3572,"calls":19448,"calls_right":9404,"call_chances":32950,"bluffs_caught":1894,"bluffs_called":2198},"random":{"bids":28195,"bluffs":26707,"calls":5103,"calls_right":1752,"call_chances":14909,"bluffs_caught":20798,"bluffs_called":21289}}}, CURVES={"cfr":[{"step":1,"vs_math":0.009,"vs_random":0.475,"sec":0},{"step":5,"vs_math":0.474,"vs_random":0.955,"sec":1},{"step":10,"vs_math":0.384,"vs_random":0.968,"sec":1},{"step":25,"vs_math":0.521,"vs_random":0.978,"sec":2},{"step":50,"vs_math":0.533,"vs_random":0.97,"sec":4},{"step":100,"vs_math":0.535,"vs_random":0.98,"sec":7},{"step":150,"vs_math":0.562,"vs_random":0.96,"sec":11},{"step":200,"vs_math":0.586,"vs_random":0.96,"sec":14},{"step":250,"vs_math":0.547,"vs_random":0.95,"sec":18},{"step":300,"vs_math":0.586,"vs_random":0.953,"sec":21},{"step":350,"vs_math":0.587,"vs_random":0.96,"sec":25},{"step":400,"vs_math":0.556,"vs_random":0.975,"sec":28},{"step":450,"vs_math":0.547,"vs_random":0.968,"sec":32},{"step":500,"vs_math":0.58,"vs_random":0.973,"sec":36},{"step":550,"vs_math":0.556,"vs_random":0.973,"sec":39},{"step":600,"vs_math":0.577,"vs_random":0.973,"sec":43},{"step":650,"vs_math":0.562,"vs_random":0.965,"sec":47},{"step":700,"vs_math":0.571,"vs_random":0.958,"sec":50},{"step":750,"vs_math":0.569,"vs_random":0.975,"sec":54},{"step":800,"vs_math":0.569,"vs_random":0.97,"sec":58},{"step":850,"vs_math":0.576,"vs_random":0.978,"sec":61},{"step":900,"vs_math":0.563,"vs_random":0.973,"sec":65},{"step":950,"vs_math":0.538,"vs_random":0.963,"sec":69},{"step":1000,"vs_math":0.569,"vs_random":0.973,"sec":72},{"step":1050,"vs_math":0.539,"vs_random":0.95,"sec":76},{"step":1100,"vs_math":0.549,"vs_random":0.968,"sec":80},{"step":1150,"vs_math":0.557,"vs_random":0.968,"sec":83},{"step":1200,"vs_math":0.551,"vs_random":0.953,"sec":87},{"step":1250,"vs_math":0.549,"vs_random":0.973,"sec":91},{"step":1300,"vs_math":0.553,"vs_random":0.968,"sec":95},{"step":1350,"vs_math":0.546,"vs_random":0.96,"sec":98},{"step":1400,"vs_math":0.555,"vs_random":0.973,"sec":102},{"step":1450,"vs_math":0.539,"vs_random":0.965,"sec":105},{"step":1500,"vs_math":0.544,"vs_random":0.96,"sec":109},{"step":1550,"vs_math":0.551,"vs_random":0.973,"sec":112},{"step":1600,"vs_math":0.553,"vs_random":0.978,"sec":116},{"step":1650,"vs_math":0.554,"vs_random":0.96,"sec":120},{"step":1700,"vs_math":0.558,"vs_random":0.973,"sec":123},{"step":1750,"vs_math":0.567,"vs_random":0.983,"sec":127},{"step":1800,"vs_math":0.576,"vs_random":0.978,"sec":130},{"step":1850,"vs_math":0.569,"vs_random":0.978,"sec":134},{"step":1900,"vs_math":0.577,"vs_random":0.958,"sec":138},{"step":1950,"vs_math":0.592,"vs_random":0.97,"sec":142},{"step":2000,"vs_math":0.586,"vs_random":0.965,"sec":146}],"dqn":[{"step":2000,"vs_math":0.063,"vs_random":0.755,"sec":3},{"step":10000,"vs_math":0.055,"vs_random":0.853,"sec":18},{"step":20000,"vs_math":0.086,"vs_random":0.89,"sec":38},{"step":30000,"vs_math":0.11,"vs_random":0.863,"sec":64},{"step":40000,"vs_math":0.139,"vs_random":0.9,"sec":106},{"step":50000,"vs_math":0.144,"vs_random":0.92,"sec":143},{"step":60000,"vs_math":0.169,"vs_random":0.925,"sec":163},{"step":70000,"vs_math":0.314,"vs_random":0.958,"sec":183},{"step":80000,"vs_math":0.371,"vs_random":0.945,"sec":200},{"step":90000,"vs_math":0.416,"vs_random":0.97,"sec":216},{"step":100000,"vs_math":0.434,"vs_random":0.95,"sec":233},{"step":110000,"vs_math":0.428,"vs_random":0.955,"sec":251},{"step":120000,"vs_math":0.341,"vs_random":0.93,"sec":268},{"step":130000,"vs_math":0.463,"vs_random":0.96,"sec":286},{"step":140000,"vs_math":0.444,"vs_random":0.958,"sec":301},{"step":150000,"vs_math":0.419,"vs_random":0.943,"sec":313},{"step":160000,"vs_math":0.428,"vs_random":0.935,"sec":326},{"step":170000,"vs_math":0.387,"vs_random":0.945,"sec":337},{"step":180000,"vs_math":0.344,"vs_random":0.955,"sec":356},{"step":190000,"vs_math":0.34,"vs_random":0.938,"sec":371},{"step":200000,"vs_math":0.406,"vs_random":0.95,"sec":386}],"ppo":[{"step":2048,"vs_math":0.014,"vs_random":0.585,"sec":2},{"step":25600,"vs_math":0.361,"vs_random":0.975,"sec":13},{"step":51200,"vs_math":0.451,"vs_random":0.973,"sec":26},{"step":76800,"vs_math":0.495,"vs_random":0.965,"sec":38},{"step":102400,"vs_math":0.542,"vs_random":0.953,"sec":53},{"step":128000,"vs_math":0.501,"vs_random":0.968,"sec":81},{"step":153600,"vs_math":0.527,"vs_random":0.963,"sec":109},{"step":179200,"vs_math":0.545,"vs_random":0.958,"sec":137},{"step":204800,"vs_math":0.558,"vs_random":0.96,"sec":152},{"step":230400,"vs_math":0.537,"vs_random":0.955,"sec":166},{"step":256000,"vs_math":0.561,"vs_random":0.955,"sec":180},{"step":281600,"vs_math":0.552,"vs_random":0.963,"sec":191},{"step":307200,"vs_math":0.559,"vs_random":0.98,"sec":203},{"step":332800,"vs_math":0.567,"vs_random":0.948,"sec":214},{"step":358400,"vs_math":0.534,"vs_random":0.953,"sec":225},{"step":384000,"vs_math":0.549,"vs_random":0.963,"sec":236},{"step":409600,"vs_math":0.573,"vs_random":0.965,"sec":248},{"step":435200,"vs_math":0.564,"vs_random":0.965,"sec":259},{"step":460800,"vs_math":0.555,"vs_random":0.973,"sec":271},{"step":486400,"vs_math":0.541,"vs_random":0.973,"sec":282},{"step":512000,"vs_math":0.539,"vs_random":0.958,"sec":293}],"nfsp":[{"step":2000,"vs_math":0.029,"vs_random":0.733,"sec":2},{"step":20000,"vs_math":0.315,"vs_random":0.905,"sec":30},{"step":40000,"vs_math":0.342,"vs_random":0.932,"sec":59},{"step":60000,"vs_math":0.379,"vs_random":0.945,"sec":89},{"step":80000,"vs_math":0.371,"vs_random":0.953,"sec":120},{"step":100000,"vs_math":0.382,"vs_random":0.95,"sec":152},{"step":120000,"vs_math":0.382,"vs_random":0.927,"sec":184},{"step":140000,"vs_math":0.394,"vs_random":0.963,"sec":216},{"step":160000,"vs_math":0.385,"vs_random":0.95,"sec":250},{"step":180000,"vs_math":0.421,"vs_random":0.958,"sec":285},{"step":200000,"vs_math":0.425,"vs_random":0.922,"sec":318},{"step":220000,"vs_math":0.425,"vs_random":0.927,"sec":350},{"step":240000,"vs_math":0.426,"vs_random":0.955,"sec":383},{"step":260000,"vs_math":0.402,"vs_random":0.94,"sec":415},{"step":280000,"vs_math":0.439,"vs_random":0.94,"sec":447},{"step":300000,"vs_math":0.398,"vs_random":0.955,"sec":480}],"mc":[{"step":20000,"vs_math":0.092,"vs_random":0.823,"sec":1},{"step":200000,"vs_math":0.095,"vs_random":0.922,"sec":7},{"step":400000,"vs_math":0.185,"vs_random":0.948,"sec":14},{"step":600000,"vs_math":0.293,"vs_random":0.97,"sec":20},{"step":800000,"vs_math":0.351,"vs_random":0.94,"sec":27},{"step":1000000,"vs_math":0.364,"vs_random":0.963,"sec":34},{"step":1200000,"vs_math":0.424,"vs_random":0.978,"sec":41},{"step":1400000,"vs_math":0.461,"vs_random":0.963,"sec":48},{"step":1600000,"vs_math":0.51,"vs_random":0.968,"sec":59},{"step":1800000,"vs_math":0.485,"vs_random":0.975,"sec":73},{"step":2000000,"vs_math":0.486,"vs_random":0.963,"sec":88},{"step":2200000,"vs_math":0.478,"vs_random":0.96,"sec":103},{"step":2400000,"vs_math":0.475,"vs_random":0.938,"sec":117},{"step":2600000,"vs_math":0.433,"vs_random":0.96,"sec":131},{"step":2800000,"vs_math":0.464,"vs_random":0.965,"sec":142},{"step":3000000,"vs_math":0.418,"vs_random":0.965,"sec":148},{"step":3200000,"vs_math":0.407,"vs_random":0.955,"sec":155},{"step":3400000,"vs_math":0.457,"vs_random":0.95,"sec":161},{"step":3600000,"vs_math":0.41,"vs_random":0.948,"sec":168},{"step":3800000,"vs_math":0.454,"vs_random":0.953,"sec":175},{"step":4000000,"vs_math":0.425,"vs_random":0.948,"sec":181}]};
+{
+const ORDER=["cfr","ismcts","ppo","nfsp","math","mc","dqn","random"];
+const COL={cfr:"#ff5a4e",ismcts:"#ffb020",ppo:"#13b38a",nfsp:"#9b5cff",mc:"#2ba8ff",dqn:"#ff4fb0",math:"#7d8597",random:"#b7bdcc"};
+const INFO={cfr:["CFR+","Counts regret over every possible deal and aims to be unexploitable."],
+dqn:["Deep Q-Network","Scores every move and always picks the top one. Predictable."],
+ppo:["PPO policy gradient","Learns odds directly, so it mixes up its play on instinct."],
+nfsp:["Neural Fictitious Self-Play","Two brains: one hunts weaknesses, one averages its history."],
+ismcts:["Info-Set MCTS","No training at all. Imagines your dice and simulates ahead."],
+mc:["Monte Carlo control","Learns only from who won each round, using a big lookup table."],
+math:["Hand-written","Bids its own odds; calls when the last bid looks unlikely."],
+random:["Hand-written","Random raises, calls a third of the time."]};
+const N=T.names, esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct=x=>Math.round(x*100)+"%";
+// ---------- dice svg ----------
+const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[28,28],[50,50],[72,72]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
+const die=(f,cls="")=>`<svg class="die ${cls}" viewBox="0 0 100 100" aria-label="${f?f:'hidden die'}"><rect x="4" y="4" width="92" height="92" rx="20" fill="${f?'#fbfaf7':'#0b1440'}" stroke="#0002" stroke-width="2"/>${f?PIPS[f].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9" fill="#0b1440"/>`).join(''):'<text x="50" y="64" text-anchor="middle" font-size="44" fill="#fbfaf7" font-family="Archivo Black">?</text>'}</svg>`;
+// ---------- leaderboard ----------
+const ranked=Object.keys(T.elo).sort((a,b)=>T.elo[b]-T.elo[a]);
+const lo=Math.min(...Object.values(T.elo))-80, hi=Math.max(...Object.values(T.elo));
+document.getElementById("lb").innerHTML=ranked.map((n,i)=>`<div class="row"><span class="rk">${i+1}</span><span class="nm"><b>${esc(N[n])}</b><span>${esc(INFO[n][0])}</span></span><div class="bar"><i style="width:${((T.elo[n]-lo)/(hi-lo)*100).toFixed(1)}%;background:${COL[n]}"></i></div><span class="elo">${T.elo[n]}</span></div>`).join('');
+const WINS=window.LD_WIN,rank4=m=>Object.keys(WINS[m]).sort((a,b)=>WINS[m][b]-WINS[m][a]);let mode4=5;
+const draw4=()=>{const W4=WINS[mode4],top=Math.max(.45,...Object.values(W4));document.getElementById("lb4").innerHTML=rank4(mode4).map((n,i)=>`<div class="row"><span class="rk">${i+1}</span><span class="nm"><b>${esc(N[n])}</b><span>${esc(n==="cfr"&&mode4>2?"Sampled CFR (Pluribus-style)":INFO[n][0])}</span></span><div class="bar"><i style="width:${(W4[n]/top*100).toFixed(1)}%;background:${COL[n]}"></i></div><span class="elo">${Math.round(W4[n]*100)}%</span></div>`).join('');
+ document.querySelectorAll("#seg4 button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.m===mode4))};
+document.querySelectorAll("#seg4 button").forEach(b=>b.onclick=()=>{mode4=+b.dataset.m;draw4()});draw4();
+document.getElementById("champ").textContent=`One-on-one: ${N[ranked[0]]} · Four-player, 5 dice: ${N[rank4(5)[0]]}`;
+// ---------- heatmap ----------
+const wr=(a,b)=>{const k=T.results[a+"|"+b];if(k)return k[0]/k[1];const r=T.results[b+"|"+a];return r?1-r[0]/r[1]:null};
+const hm=document.getElementById("hm"); hm.style.gridTemplateColumns=`9em repeat(${ranked.length},minmax(44px,1fr))`;
+let h='<div class="h"></div>'+ranked.map(n=>`<div class="c">${esc(N[n])}</div>`).join('');
+for(const a of ranked){h+=`<div class="h">${esc(N[a])}</div>`;for(const b of ranked){if(a===b){h+='<div style="background:var(--line)">–</div>';continue}
+const w=wr(a,b),d=w-.5,al=Math.min(1,Math.abs(d)*2.2);const bg=d>=0?`rgba(255,90,78,${al})`:`rgba(29,63,214,${al})`;
+h+=`<div style="background:${bg};color:${al>.5?'#fff':'inherit'}" title="${esc(N[a])} vs ${esc(N[b])}">${pct(w)}</div>`}}
+hm.innerHTML=h;
+// ---------- curves ----------
+const cs=document.getElementById("curve"), cl=document.getElementById("curveLegend");
+const CN=["cfr","ppo","nfsp","mc","dqn"];
+cl.innerHTML=CN.map(n=>`<span><i style="background:${COL[n]}"></i>${esc(N[n])}</span>`).join('')+`<span><i style="background:transparent;border:2px dashed var(--mut)"></i>even with Math Bot</span>`;
+const drawC=()=>{const W=cs.clientWidth,H=cs.clientHeight,L=40,R=10,Tp=10,B=30,x=v=>L+v*(W-L-R),y=v=>Tp+(1-v/.7)*(H-Tp-B);
+let s=[0,.1,.2,.3,.4,.5,.6,.7].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="12" fill="var(--mut)">${v*100}%</text>`).join('');
+s+=`<line x1="${L}" x2="${W-R}" y1="${y(.5)}" y2="${y(.5)}" stroke="var(--mut)" stroke-dasharray="5 5"/>`;
+s+=(W<520?[0,1]:[0,.25,.5,.75,1]).map(v=>`<text x="${x(v)}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--mut)">${Math.round(v*100)}% trained</text>`).join('');
+for(const n of CN){const c=CURVES[n],mx=c[c.length-1].step;s+=`<polyline fill="none" stroke="${COL[n]}" stroke-width="3" stroke-linejoin="round" points="${[{step:0,vs_math:0}].concat(c).map(p=>x(p.step/mx).toFixed(1)+","+y(Math.min(.7,p.vs_math)).toFixed(1)).join(' ')}"/>`}
+cs.innerHTML=s};
+const ro=new ResizeObserver(drawC); ro.observe(cs);
+// ---------- personalities ----------
+document.getElementById("cards").innerHTML=ranked.map(n=>{const s=T.stats[n];
+const m=[["Bluff rate",s.bids?s.bluffs/s.bids:0],["Calls 'Liar!'",s.call_chances?s.calls/s.call_chances:0],["Right when calling",s.calls?s.calls_right/s.calls:0],["Bluffs caught",s.bluffs_called?s.bluffs_caught/s.bluffs_called:0]];
+return `<div class="card"><h3><span class="dot" style="background:${COL[n]}"></span>${esc(N[n])}</h3><p>${esc(INFO[n][1])}</p>${m.map(([l,v])=>`<div class="meter"><span>${l}</span><span class="t"><i style="width:${(v*100).toFixed(1)}%;background:${COL[n]}"></i></span><b>${pct(v)}</b></div>`).join('')}</div>`}).join('');
+
+
+}
+</script>
+</body></html>

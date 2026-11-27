@@ -7,18 +7,19 @@ Six AIs that each learned to bluff in a different way, a tournament between them
 
 **Play it:** https://atharva309.github.io/Liars-dice/
 
-![Your turn at the table: three AI opponents, your five dice on a rack, and the coach suggesting a move](screenshots/your-turn.jpg)
+![Your turn at the table: three AI opponents, your dice on a rack, and the coach suggesting a move](screenshots/your-turn.jpg)
 
 ![The reveal: cups lifted, matching dice counted, and the verdict](screenshots/reveal.jpg)
 
 ## What's here
 
-The page reads as a short story in three chapters, followed by the game itself:
+The page reads as a short story in four chapters, followed by the game itself:
 
 1. **The bots.** Who the eight players are and how each one thinks.
 2. **Training.** The loop every learner ran, and what changed between the first version and the current one.
 3. **Results.** Four-player standings, new bots against old, one-on-one records, and how each bot plays.
-4. **Play.** A first-person 3D table against three AIs you pick, with 2, 3 or 5 dice each. Optional coach tips show the odds and suggest a move.
+4. **Exam.** Two papers with right answers: an answer key for small endgames, and a "hunter" that finds each bot's worst-case opponent.
+5. **Play.** A first-person 3D table against three AIs you pick, with 2, 3 or 5 dice each. Optional coach tips show the odds and suggest a move.
 
 ## The rules in 30 seconds
 
@@ -98,6 +99,48 @@ What stood out:
 - **The Thinker gained the most.** It went from 12% to 27% in the mixed field, and wins 53% of its games against three copies of its old self. It now weighs the hidden dice by the bidding and plays its simulations out with a learned model of the others.
 - **The Gut Player is the one to beat.** It tops the four-player standings at 5, 3 and 2 dice (39%, 39%, 38%) and has the best one-on-one rating. Head to head the field is much tighter: only the Gut Player and the Exploiter are clearly ahead of the Math Bot. The learners practised at four-player tables, and it shows.
 
+## The exam
+
+Win rate against each other can hide habits that every bot shares, so the bots also sit an exam with right answers. Both papers are computed exactly instead of estimated from games.
+
+**Paper A, the answer key.** One-on-one endgames with up to three dice on the table are solved completely: 7.1 million situations, each with a known best move. The table shows the share of a bot's moves that are the best move, or within half a point of it, for three versions of each bot.
+
+| | First version | Halfway through retraining | Now | Hard questions, now |
+|---|---|---|---|---|
+| Gut Player | 89% | 93% | 94% | 87% |
+| Exploiter | 99% | 87% | 86% | 79% |
+| Old-Schooler | 87% | 86% | 96% | 75% |
+| Hybrid | 88% | 88% | 89% | 87% |
+| Game Theorist | 87% | 93% | 96% | 82% |
+| Thinker* | 84% |  | 84% | 59% |
+| Math Bot |  |  | 86% | 0% |
+
+Hard questions are the 8% of decisions where playing the raw odds gives the wrong move, so the Math Bot scores 0% on them by definition. *The Thinker is a randomised search with no halfway version. It was marked on sampled rounds, so its figures are good to about 2 points.
+
+**Paper B, the hunter.** For each bot, the best possible counter-strategy against that bot's actual habits. Nothing can beat the bot by more. Each cell shows how often the hunter wins against the first version → halfway → now. Lower is better for the bot.
+
+| | Four players, 2 dice each (25% is an even share) | Duel, 2 dice each (50% means it cannot be exploited) |
+|---|---|---|
+| Gut Player | 45% → 60% → 57% | 80% → 91% → 95% |
+| Exploiter | 80% → 75% → 83% | 95% → 97% → 91% |
+| Old-Schooler | 89% → 77% → 77% | 99% → 97% → 94% |
+| Hybrid | 81%+ → 60%+ → 62%+ | 91% → 88% → 87% |
+| Game Theorist | 57% → 67% → 69% | 86% → 90% → 92% |
+| Math Bot | 69% | 79% |
+
+A plus sign means "at least": that bot mixes its play too much to pin the figure down. The Thinker has no hunter score because its move chances cannot be written down exactly. The hunter knows a bot's habits exactly, so these are worst cases, not what a person at the table would get.
+
+What the exam says:
+
+- **Retraining taught the hard decisions.** On the questions where the raw odds mislead, the Game Theorist went from 11% to 82% and the Gut Player from 24% to 87%. Four of the five learners now score higher on the whole paper than their first version did. The Exploiter scores lower.
+- **It did not make them harder to exploit.** At a four-player table with 2 dice each, the hunter wins more against today's Gut Player (45% before, 57% now), Exploiter (80%, 83%) and Game Theorist (57%, 69%) than against their first versions. Only the Old-Schooler and the Hybrid got harder to exploit.
+- **A high mark is not the same as safe.** The first Exploiter scored 99% on the answer key, yet the hunter beats it in 95% of duels. It plays good moves but always the same ones, so a counter-strategy can be built around them. That is why the exam needs both papers.
+
+Two leaks it found, both for when it is down to you and one bot with 2 dice each:
+
+- **Exploiter.** Open with two of a low number you do not hold (ones, twos or threes). It always raises to three of that number, which cannot be true. Call it.
+- **Gut Player.** When it makes the first claim of a round, it names a number it does not hold. Call Liar unless you hold that number yourself.
+
 ## How it works
 
 - **Shortlist.** For each face a bot considers the cheapest legal raise and the biggest claims that are at least 75%, 50% and 25% likely, plus calling. That is at most 24 claims.
@@ -123,12 +166,13 @@ Then open http://localhost:8000. It needs a local server because the page fetche
 - `bots/`: the trained bots and the two small models they share
 - `screenshots/`: the images above
 
-The Python training code is not in this repository.
+The training code, every earlier version of the bots, and the exam code are on the [`exam-lab` branch](https://github.com/Atharva309/Liars-dice/tree/exam-lab/lab) under `lab/`.
 
 ## Limitations
 
 - These are small experiments with minutes of training on a CPU. The bots are fun opponents, not strong players by serious standards.
-- Results are bot against bot. How they fare against people is untested.
+- Tournament results are bot against bot. How they fare against people is untested.
+- The exam's answer key only covers one-on-one endgames with up to three dice on the table. Nobody has an answer key for the full game.
 - The Game Theorist remains the weakest learner at a four-player table. CFR's guarantees only hold for two players.
 - No wild ones and no "exact" call, so there is no way to win a die back.
 

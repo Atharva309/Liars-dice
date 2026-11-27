@@ -18,7 +18,7 @@ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms/SPD));
 const sum=a=>a.reduce((x,y)=>x+y,0);
 
-//<logic> rules and AI policies (mirrors mp.py for the 2-dice agents and gen.py for the any-dice agents; checked against both in tests)
+//<logic> rules and AI policies (mirrors gen3.py, the Python training code; checked against it in tests)
 const CALL=120,bq=k=>Math.floor(k/6)+1,bf=k=>k%6+1;
 const legal=(l,tot)=>{const a=[];for(let k=l+1;k<tot*6;k++)a.push(k);if(l>=0)a.push(CALL);return a};
 const comb=(n,k)=>{let r=1;for(let i=1;i<=k;i++)r=r*(n-k+i)/i;return r};
@@ -38,72 +38,76 @@ function fwd(net,x){let h=x;for(let li=0;li<net.length;li++){const L=net[li],o=n
  for(let j=0;j<L.i;j++){const v=h[j];if(v===0)continue;const r=j*L.o;for(let k=0;k<L.o;k++)o[k]+=v*f[r+k]}
  if(li<net.length-1)for(let k=0;k<L.o;k++)if(o[k]<0)o[k]=0;h=o}return h}
 const sample=pairs=>{let r=Math.random()*pairs.reduce((s,x)=>s+x[1],0);for(const p of pairs){r-=p[1];if(r<=0)return p[0]}return pairs[pairs.length-1][0]};
-// ----- 2-dice agents: learned on the raw game (8 dice, call = 48 in their own numbering)
-const tkey=o=>o[0].join("")+"|"+o[1]+"|"+o[2]+"|"+o[4];
-const encode=o=>{const x=new Float32Array(115);for(const d of o[0])x[d-1]+=.5;x[6+o[1]-1]=1;x[8+o[2]-1]=1;x[14+o[3]-1]=1;x[17+o[4]+1]=1;x[66+o[5]+1]=1;return x};
-const AG={},AG5={};
-function policy2(n){
- if(n==="math")return mathBot;if(n==="random")return randomBot;if(n==="ismcts")return ismcts;
- const ag=AG[n];if(!ag)return mathBot;const to1=a=>a===CALL?48:a,from1=a=>a===48?CALL:a;
- if(ag.kind==="det")return(o,acts)=>{const a=from1(ag.policy[tkey(o)]);return a!==undefined&&acts.includes(a)?a:mathBot(o,acts)};
- if(ag.kind==="table")return(o,acts)=>{const p=(ag.policy[tkey(o)]||[]).map(x=>[from1(x[0]),x[1]]).filter(x=>acts.includes(x[0]));return p.length?sample(p):mathBot(o,acts)};
- return(o,acts)=>{const out=fwd(ag.net,encode(o)),v=a=>out[to1(a)];if(ag.kind==="greedy"){let b=acts[0];for(const a of acts)if(v(a)>v(b))b=a;return b}
-  let m=-1e9;for(const a of acts)if(v(a)>m)m=v(a);return sample(acts.map(a=>[a,Math.exp(v(a)-m)]))}}
-const H2={1:[[1],[2],[3],[4],[5],[6]],2:[]},HP={1:[1/6,1/6,1/6,1/6,1/6,1/6],2:[]};for(let a=1;a<=6;a++)for(let b=a;b<=6;b++){H2[2].push([a,b]);HP[2].push(a===b?1/36:2/36)}
-function ismcts(o,acts,ctx,sims=700,c=1){const h=o[0],last=o[4];if(acts.length===1)return acts[0];
- const order=ctx.order,k=order.length,total=ctx.total;
- const cand=order.slice(1).map(s=>{const bids=ctx.hist.filter(x=>x[0]===s).map(x=>x[1]),n=ctx.counts[s];const ws=H2[n].map((x,i)=>HP[n][i]*bids.reduce((m,b)=>m*(1+1.5*x.filter(d=>d===bf(b)).length),1));return[H2[n],ws,ws.reduce((a,b)=>a+b,0)]});
- const pickH=cd=>{let r=Math.random()*cd[2];for(let i=0;i<cd[0].length;i++){r-=cd[1][i];if(r<=0)return cd[0][i]}return cd[0][0]};
- const N=new Map(),W=new Map();
- for(let it=0;it<sims;it++){const hands=[h].concat(cand.map(pickH));let node="",l=last,mover=0,bidder=last>=0?k-1:-1,path=[],a;
-  for(;;){const la=legal(l,total),un=la.filter(x=>!N.has(node+","+x));
-   if(un.length){a=un[Math.floor(Math.random()*un.length)];node+=","+a;N.set(node,0);W.set(node,new Float64Array(k));path.push(node);break}
-   let t=0;for(const x of la)t+=N.get(node+","+x);let bv=-1e9;for(const x of la){const kk=node+","+x,n=N.get(kk),v=W.get(kk)[mover]/n+c*Math.sqrt(Math.log(t)/n);if(v>bv){bv=v;a=x}}
-   node+=","+a;path.push(node);if(a===CALL)break;l=a;bidder=mover;mover=(mover+1)%k}
-  while(a!==CALL){l=a;bidder=mover;mover=(mover+1)%k;const hm=hands[mover];a=mathBot([hm,hm.length,total-hm.length,k-1,l,-1],legal(l,total))}
-  const f=bf(l),cnt=hands.reduce((s,x)=>s+x.filter(d=>d===f).length,0),loser=cnt>=bq(l)?mover:bidder;
-  for(const kk of path){N.set(kk,N.get(kk)+1);const w=W.get(kk);for(let s=0;s<k;s++)w[s]+=s===loser?-1:1/(k-1)}}
- let best=acts[0],bn=-1;for(const x of acts){const n=N.get(","+x)||0;if(n>bn){bn=n;best=x}}return best}
-// ----- any-dice agents (3 to 5 dice each): a shortlist of sensible moves, each described by a few odds-based numbers
-const N50=PT.map((r,o)=>{let m=0;for(let nd=0;nd<=o;nd++)if(r[nd]>=.5)m=nd;return m}),N25=PT.map((r,o)=>{let m=0;for(let nd=0;nd<=o;nd++)if(r[nd]>=.25)m=nd;return m});
-function cands5(c,n,others,last){const total=n+others,out=[],lq=last>=0?bq(last):0,lf=last>=0?bf(last):0;
- for(let f=1;f<=6;f++){const q0=last>=0&&f>lf?lq:lq+1;if(q0>total)continue;const qc=c[f-1]+N50[others],qa=c[f-1]+N25[others];out.push((q0-1)*6+f-1);
-  if(q0<qc&&qc<=total)out.push((qc-1)*6+f-1);if(qa>qc&&q0<qa&&qa<=total)out.push((qa-1)*6+f-1)}
- out.sort((a,b)=>a-b);if(last>=0)out.push(CALL);return out}
-function feats5(c,n,others,nopp,last,prev,acts){const total=n+others,sd=Math.sqrt(others*5/36)||1,mu=others/6,lq=last>=0?bq(last):0,lf=last>=0?bf(last):0,F=new Float32Array(acts.length*15),cl=v=>Math.max(-3,Math.min(3,v))/3;
- let pl=0,zl=0,jl=0;if(last>=0){const nl=lq-c[lf-1];pl=tail(others,nl);zl=cl((nl-mu)/sd);jl=prev>=0?Math.max(0,Math.min(3,lq-bq(prev)))/3:0}
- acts.forEach((a,i)=>{const r=i*15;F[r]=n/5;F[r+1]=others/15;F[r+2]=nopp/3;F[r+3]=last>=0?1:0;F[r+4]=pl;F[r+5]=zl;F[r+6]=jl;if(a===CALL){F[r+7]=1;return}
-  const q=bq(a),f=bf(a),nd=q-c[f-1];F[r+8]=tail(others,nd);F[r+9]=cl((nd-mu)/sd);F[r+10]=Math.max(0,Math.min(4,q-lq))/4;F[r+11]=last>=0&&f===lf?1:0;F[r+12]=c[f-1]/n;F[r+13]=f/6;F[r+14]=q/total});return F}
-const skey5=(c,n,others,nopp,last)=>{let b=0;if(last>=0){const pl=tail(others,bq(last)-c[bf(last)-1]);b=1+[.05,.2,.4,.6,.8].filter(t=>pl>=t).length}return b+"|"+(others<=2?0:others<=5?1:others<=9?2:3)+"|"+n+"|"+nopp};
-function bmap5(c,others,last,acts){const lq=last>=0?bq(last):0,lf=last>=0?bf(last):0,out=new Map(),best={};
- for(const a of acts){if(a===CALL){out.set(0,a);continue}const q=bq(a),f=bf(a),pa=tail(others,q-c[f-1]),dq=q-lq,b=1+[.15,.35,.55,.8].filter(t=>pa>=t).length*6+(dq<=1?0:dq===2?1:2)*2+(last>=0&&f===lf?1:0);
-  if(!out.has(b)||pa>best[b]+1e-9){out.set(b,a);best[b]=pa}}return out}
-function policy5(n){
- if(n==="math")return mathBot;if(n==="random")return randomBot;if(n==="ismcts")return ismcts5;
- const ag=AG5[n];if(!ag)return mathBot;
- if(ag.net)return(o)=>{const c=cnt6(o[0]),A=cands5(c,o[1],o[2],o[4]);if(A.length===1)return A[0];const F=feats5(c,o[1],o[2],o[3],o[4],o[5],A),z=A.map((_,i)=>fwd(ag.net,F.subarray(i*15,i*15+15))[0]);
-  if(ag.kind==="q"){let b=0;for(let i=1;i<z.length;i++)if(z[i]>z[b])b=i;return A[b]}const m=Math.max.apply(null,z);return sample(A.map((a,i)=>[a,Math.exp(z[i]-m)]))};
- return(o,acts)=>{const c=cnt6(o[0]),bm=bmap5(c,o[2],o[4],cands5(c,o[1],o[2],o[4])),row=ag.t[skey5(c,o[1],o[2],o[3],o[4])];if(!row)return mathBot(o,acts);const bs=[...bm.keys()].sort((a,b)=>a-b);
-  if(ag.kind==="mcq"){let b=bs[0];for(const x of bs)if(row[x]>row[b])b=x;return bm.get(b)}const w=bs.map(b=>[bm.get(b),Math.max(row[b],0)]);return w.some(x=>x[1]>0)?sample(w):mathBot(o,acts)}}
-const H5={};function hands5(n){if(H5[n])return H5[n];const out=[],fact=[1,1,2,6,24,120],rec=(f,left,c)=>{if(f===5){c[5]=left;let p=fact[n];for(const x of c)p/=fact[x];out.push({c:c.slice(),p:p/Math.pow(6,n)});return}for(let x=0;x<=left;x++){c[f]=x;rec(f+1,left-x,c)}};rec(0,n,[0,0,0,0,0,0]);return H5[n]=out}
-function ismcts5(o,acts,ctx,sims=500,cx=1){const myc=cnt6(o[0]),last=o[4],order=ctx.order,k=order.length,total=ctx.total,ns=order.map(s=>ctx.counts[s]);
- const A0=cands5(myc,ns[0],total-ns[0],last);if(A0.length===1)return A0[0];
- const cand=order.slice(1).map(s=>{const fs=ctx.hist.filter(x=>x[0]===s).map(x=>bf(x[1])-1),L=hands5(ctx.counts[s]),ws=L.map(h=>{let w=h.p;for(const f of fs)w*=1+1.5*h.c[f];return w});let t=0;for(const w of ws)t+=w;return[L,ws,t]});
+// ----- generation 2 (any dice count): mirrors gen3.py. The bots read the bidding, weigh the whole game, and pick from a shortlist of claims.
+let MODEL=null;   // {alpha, post}: post[n][b][a] = how many of a face a player with n dice probably holds, given b bids on it (0,1,2+) and a = bid other faces
+const BINP={};for(let n=1;n<=5;n++){BINP[n]=[];for(let c=0;c<=n;c++)BINP[n].push(comb(n,c)*Math.pow(1/6,c)*Math.pow(5/6,n-c))}
+const HC=new Map();
+function hiddenN(codes){let key=0;for(const c of codes)key=key*36+c;let r=HC.get(key);if(r)return r;
+ let d=[1];for(const c of codes){const p=MODEL.post[(c/6)|0][((c%6)/2)|0][c%2],e=new Array(d.length+p.length-1).fill(0);for(let i=0;i<d.length;i++)for(let j=0;j<p.length;j++)e[i+j]+=d[i]*p[j];d=e}
+ const o=d.length-1,t=new Array(o+2).fill(0);for(let m=o;m>=0;m--)t[m]=t[m+1]+d[m];const nd=[.75,.5,.25].map(th=>{let b=0;for(let m=0;m<=o;m++)if(t[m]>=th)b=m;return b});
+ r={t,nd};HC.set(key,r);return r}
+const btN=(t,need)=>need<=0?1:need<t.length?t[need]:0;
+function viewN(o,ctx){return{hand:o[0],c:cnt6(o[0]),n:o[1],others:o[2],nopp:o[3],last:o[4],prev:o[5],nbids:ctx.hist.length,
+ opp:ctx.order.slice(1).map(s=>{const fb=[0,0,0,0,0,0];for(const h of ctx.hist)if(h[0]===s)fb[bf(h[1])-1]++;return{n:ctx.counts[s],fb}})}}
+function prepN(x){const c=x.c,last=x.last,total=x.n+x.others,lq=last>=0?bq(last):0,lf=last>=0?bf(last):0,sums=x.opp.map(p=>p.fb[0]+p.fb[1]+p.fb[2]+p.fb[3]+p.fb[4]+p.fb[5]),T=[],acts=[];
+ for(let f=0;f<6;f++){const codes=x.opp.map((p,j)=>p.n*6+Math.min(p.fb[f],2)*2+(sums[j]>p.fb[f]?1:0)).sort((a,b)=>a-b),h=hiddenN(codes);T.push(h.t);
+  const q0=last>=0&&f+1>lf?lq:lq+1;if(q0>total)continue;const qs=[q0];for(const nd of h.nd){const q=c[f]+nd;if(q0<q&&q<=total&&!qs.includes(q))qs.push(q)}
+  for(const q of qs)acts.push((q-1)*6+f)}
+ acts.sort((a,b)=>a-b);if(last>=0)acts.push(CALL);return{T,acts}}
+function shareN(cnts,i,dec){let s=0,me=0;for(let j=0;j<cnts.length;j++){const n=cnts[j]-(j===dec?1:0),p=n>0?Math.pow(n,MODEL.alpha):0;s+=p;if(j===i)me=p}return s>0?me/s:0}
+const NFN=24;
+function featsN(x,T,acts){const c=x.c,n=x.n,others=x.others,last=x.last,prev=x.prev,total=n+others,sd=Math.sqrt(others*5/36)||1,mu=others/6,lq=last>=0?bq(last):0,lf=last>=0?bf(last):0,cl=v=>Math.max(-3,Math.min(3,v))/3;
+ const cnts=[n].concat(x.opp.map(p=>p.n)),v0=shareN(cnts,0,-1),loss=(v0-shareN(cnts,0,0))*4,gnext=(shareN(cnts,0,1)-v0)*4,st=new Float32Array(12);
+ st[0]=n/5;st[1]=others/15;st[2]=x.nopp/3;st[9]=loss;st[11]=gnext;
+ if(last>=0){const nl=lq-c[lf-1];st[3]=1;st[4]=tail(others,nl);st[5]=btN(T[lf-1],nl);st[6]=cl((nl-mu)/sd);st[7]=prev>=0?Math.max(0,Math.min(3,lq-bq(prev)))/3:0;st[8]=Math.min(x.nbids,8)/8;st[10]=(shareN(cnts,0,cnts.length-1)-v0)*4}
+ const nfb=x.opp[0].fb,F=new Float32Array(acts.length*NFN);
+ acts.forEach((a,i)=>{const r=i*NFN;F.set(st,r);if(a===CALL){F[r+12]=1;return}const q=bq(a),f=bf(a),nd=q-c[f-1],q0=last>=0&&f>lf?lq:lq+1;let ob=0;for(const p of x.opp)ob+=p.fb[f-1];
+  F[r+13]=tail(others,nd);F[r+14]=btN(T[f-1],nd);F[r+15]=cl((nd-mu)/sd);F[r+16]=Math.max(0,Math.min(4,q-lq))/4;F[r+17]=last>=0&&f===lf?1:0;F[r+18]=c[f-1]/n;F[r+19]=f/6;F[r+20]=q/total;F[r+21]=Math.min(ob,3)/3;F[r+22]=nfb[f-1]?1:0;F[r+23]=q===q0?1:0});return F}
+const PL3=[.03,.1,.2,.35,.5,.65,.8,.92],PA3=[.1,.25,.4,.55,.7,.85];
+function tviewN(x,T,acts){const c=x.c,last=x.last,others=x.others,lq=last>=0?bq(last):0,lf=last>=0?bf(last):0;let b=0;if(last>=0){const pl=btN(T[lf-1],lq-c[lf-1]);b=1;for(const t of PL3)if(pl>=t)b++}
+ const key=b+"|"+(others<=2?0:others<=5?1:others<=9?2:3)+"|"+x.n+"|"+x.nopp,bm=new Map(),best={};
+ for(const a of acts){if(a===CALL){bm.set(0,a);continue}const q=bq(a),f=bf(a),pa=btN(T[f-1],q-c[f-1]),dq=q-lq;let lv=0;for(const t of PA3)if(pa>=t)lv++;const k=1+lv*6+(dq<=1?0:dq===2?1:2)*2+(last>=0&&f===lf?1:0);
+  if(!bm.has(k)||pa>best[k]+1e-9){bm.set(k,a);best[k]=pa}}return{key,bm}}
+const BOT={};
+function tableMove(ag,x,P){const v=tviewN(x,P.T,P.acts),row=ag.t[v.key];if(!row)return-1;const bs=[...v.bm.keys()].sort((a,b)=>a-b);
+ if(ag.kind==="mcq"){let b=bs[0];for(const k of bs)if(row[k]>row[b])b=k;return v.bm.get(b)}const w=bs.map(k=>[v.bm.get(k),Math.max(row[k],0)]);return w.some(p=>p[1]>0)?sample(w):-1}
+function policyN(n){
+ if(n==="math")return mathBot;if(n==="random")return randomBot;if(n==="ismcts")return thinkerN;
+ return(o,acts,ctx)=>{const ag=BOT[n];if(!ag||!MODEL)return mathBot(o,acts);const x=viewN(o,ctx),P=prepN(x),A=P.acts;if(A.length===1)return A[0];
+  if(!ag.net){const m=tableMove(ag,x,P);return m<0?mathBot(o,acts):m}
+  const F=featsN(x,P.T,A),z=A.map((_,i)=>fwd(ag.net,F.subarray(i*NFN,i*NFN+NFN))[0]);
+  if(ag.kind==="q"){let b=0;for(let i=1;i<z.length;i++)if(z[i]>z[b])b=i;return A[b]}const m=Math.max.apply(null,z),T=ag.temp||1;return sample(A.map((a,i)=>[a,Math.exp((z[i]-m)/T)]))}}   // temp<1 sharpens a sampled policy; tested stronger than sampling at face value
+function liteMove(net,x,P,T){const A=P.acts,F=featsN(x,P.T,A),L1=net[0],L2=net[1],H=L1.o,w1=L1.f,w2=L2.f,b1=L1.i*H,base=new Float32Array(H),z=new Float64Array(A.length);
+ for(let h=0;h<H;h++){let v=w1[b1+h];for(let j=0;j<12;j++)v+=F[j]*w1[j*H+h];base[h]=v}let m=-1e9;
+ for(let i=0;i<A.length;i++){const r=i*NFN;let out=w2[H];for(let h=0;h<H;h++){let v=base[h];for(let j=12;j<NFN;j++){const fv=F[r+j];if(fv!==0)v+=fv*w1[j*H+h]}if(v>0)out+=v*w2[h]}z[i]=out;if(out>m)m=out}
+ let t=0;for(let i=0;i<A.length;i++){z[i]=Math.exp((z[i]-m)/T);t+=z[i]}let rr=Math.random()*t;for(let i=0;i<A.length;i++){rr-=z[i];if(rr<=0)return A[i]}return A[A.length-1]}
+// The Thinker: no training of its own. It samples what the others might hold (weighted by their bids), tries each shortlisted move,
+// plays the round out with a small learned model of how good players bid, and scores the result by how the game-win chance moved.
+const H5={};function hands5(n){if(H5[n])return H5[n];const out=[],fact=[1,1,2,6,24,120],rec=(f,left,c)=>{if(f===5){c[5]=left;let p=fact[n];for(const v of c)p/=fact[v];out.push({c:c.slice(),p:p/Math.pow(6,n)});return}for(let v=0;v<=left;v++){c[f]=v;rec(f+1,left-v,c)}};rec(0,n,[0,0,0,0,0,0]);return H5[n]=out}
+let STAGES=[[24,6],[48,3],[96,1]];
+function thinkerN(o,acts,ctx){const roll=BOT[MODEL&&MODEL.rollout];if(!MODEL||!roll||!roll.net)return mathBot(o,acts);
+ const x=viewN(o,ctx),A=prepN(x).acts;if(A.length===1)return A[0];const k=ctx.order.length,cnts=ctx.order.map(s=>ctx.counts[s]),total=ctx.total,v0=shareN(cnts,0,-1);
+ // imagined hands: weight each possible hand by the faces that player actually bid (only those carry evidence)
+ const cand=x.opp.map(p=>{const L=hands5(p.n),sum=p.fb.reduce((a,b)=>a+b,0),ws=L.map(h=>{let w=h.p;for(let f=0;f<6;f++)if(p.fb[f]>0)w*=MODEL.post[p.n][Math.min(p.fb[f],2)][sum>p.fb[f]?1:0][h.c[f]]/BINP[p.n][h.c[f]];return w});let t=0;for(const w of ws)t+=w;return[L,ws,t]});
  const pickH=cd=>{let r=Math.random()*cd[2];for(let i=0;i<cd[0].length;i++){r-=cd[1][i];if(r<=0)return cd[0][i].c}return cd[0][0].c};
- const N=new Map(),W=new Map();
- for(let it=0;it<sims;it++){const C=[myc].concat(cand.map(pickH));let node="",l=last,mover=0,bidder=last>=0?k-1:-1,path=[],a;
-  for(;;){const la=cands5(C[mover],ns[mover],total-ns[mover],l),un=la.filter(x=>!N.has(node+","+x));
-   if(un.length){a=un[Math.floor(Math.random()*un.length)];node+=","+a;N.set(node,0);W.set(node,new Float64Array(k));path.push(node);break}
-   let t=0;for(const x of la)t+=N.get(node+","+x);let bv=-1e9;for(const x of la){const kk=node+","+x,n=N.get(kk),v=W.get(kk)[mover]/n+cx*Math.sqrt(Math.log(t)/n);if(v>bv){bv=v;a=x}}
-   node+=","+a;path.push(node);if(a===CALL)break;l=a;bidder=mover;mover=(mover+1)%k}
-  while(a!==CALL){l=a;bidder=mover;mover=(mover+1)%k;a=mathC(C[mover],total-ns[mover],l,total)}
-  const f=bf(l)-1;let cnt=0;for(const c of C)cnt+=c[f];const loser=cnt>=bq(l)?mover:bidder;
-  for(const kk of path){N.set(kk,N.get(kk)+1);const w=W.get(kk);for(let s=0;s<k;s++)w[s]+=s===loser?-1:1/(k-1)}}
- let best=A0[0],bn=-1;for(const x of A0){const n=N.get(","+x)||0;if(n>bn){bn=n;best=x}}return best}
-const policyOf=(n,start)=>start<=2?policy2(n):policy5(n);
+ const fb0=[[0,0,0,0,0,0]].concat(x.opp.map(p=>p.fb));for(const h of ctx.hist)if(h[0]===ctx.order[0])fb0[0][bf(h[1])-1]++;
+ const gain=[];for(let j=0;j<k;j++)gain.push(shareN(cnts,0,j)-v0);
+ // one imagined world: everyone's dice fixed, so every candidate move is judged on the same deals
+ const play=(C,first)=>{const fb=fb0.map(r=>r.slice());let a=first,l=x.last,pv=x.prev,mover=0,bidder=l>=0?k-1:-1,nb=x.nbids;
+  for(;;){if(a===CALL){const f=bf(l)-1;let cnt=0;for(const c of C)cnt+=c[f];return gain[cnt>=bq(l)?mover:bidder]}
+   fb[mover][bf(a)-1]++;pv=l;l=a;bidder=mover;nb++;mover=(mover+1)%k;
+   const opp=[];for(let d=1;d<k;d++){const j=(mover+d)%k;opp.push({n:cnts[j],fb:fb[j]})}const xm={c:C[mover],n:cnts[mover],others:total-cnts[mover],nopp:k-1,last:l,prev:pv,nbids:nb,opp},P=prepN(xm);
+   a=P.acts.length===1?P.acts[0]:liteMove(roll.net,xm,P,roll.temp||1)}};
+ // successive halving: every move on a few worlds, then the best 8 on more, then the best 3 on many
+ let live=A.map((a,i)=>i);const sum=new Float64Array(A.length),num=new Float64Array(A.length);
+ for(const[worlds,keep]of STAGES){for(let w=0;w<worlds;w++){const C=[x.c].concat(cand.map(pickH));for(const i of live){sum[i]+=play(C,A[i]);num[i]++}}
+  live.sort((p,q)=>sum[q]/num[q]-sum[p]/num[p]);live=live.slice(0,keep)}
+ return A[live[0]]}
+const policyOf=n=>policyN(n);
 //</logic>
-async function loadAgent(n,start){const five=start>2,S=five?AG5:AG;if(n==="math"||n==="random"||n==="ismcts"||S[n])return true;
- try{const r=await fetch((five?"ai5/":"ai/")+n+".json");if(!r.ok)throw 0;const d=await r.json();S[n]=d.layers?{kind:d.kind,net:decodeNet(d.layers)}:d;return true}catch(e){return false}}
+async function loadAgent(n){
+ try{if(!MODEL){const r=await fetch("bots/model.json");if(!r.ok)throw 0;MODEL=await r.json()}
+  for(const m of n==="math"||n==="random"?[]:n==="ismcts"?[MODEL.rollout]:[n]){if(BOT[m])continue;const r=await fetch("bots/"+m+".json");if(!r.ok)throw 0;const d=await r.json();BOT[m]=d.layers?{kind:d.kind,temp:d.temp,net:decodeNet(d.layers)}:d}return true}catch(e){return false}}
 
 // ---------- sound: tiny synthesised effects, no audio files ----------
 let AC=null,OUT=null,NB=null;
@@ -131,7 +135,8 @@ const lam=(h,x)=>new THREE.MeshLambertMaterial(Object.assign({color:lin(h)},x));
 const bas=(h,x)=>new THREE.MeshBasicMaterial(Object.assign({color:lin(h),toneMapped:false},x));
 const shade=(h,k)=>"#"+new THREE.Color(h).multiplyScalar(k).getHexString();
 const part=(g,m,s,p,r)=>{const o=new THREE.Mesh(g,m);if(s)o.scale.set(s[0],s[1],s[2]);if(p)o.position.set(p[0],p[1],p[2]);if(r)o.rotation.set(r[0],r[1],r[2]);return o};
-const anim=(dur,f,e)=>new Promise(res=>anims.push({t0:performance.now(),dur:Math.max(1,dur/SPD),f,e:e||(k=>1-Math.pow(1-k,3)),res}));
+let roundT0=0,EP=0;   // animation epoch: bumped whenever the table is reset, so stale animations are dropped instead of applied
+const anim=(dur,f,e)=>new Promise(res=>anims.push({t0:performance.now(),dur:Math.max(1,dur/SPD),f,e:e||(k=>1-Math.pow(1-k,3)),res,ep:EP}));
 function tex(w,h,draw,rep){const c=document.createElement("canvas");c.width=w;c.height=h;draw(c.getContext("2d"),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;
  if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep[0],rep[1])}return t}
 const rr=(g,x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
@@ -324,7 +329,7 @@ function setMood(i,m){const s=seats[i];if(s&&s.u&&G&&G.counts[i]>0)s.u.mood=m}
 function frame(){
  const dt=Math.min(.05,clock.getDelta()),t=clock.elapsedTime,now=performance.now();
  if(!lowQ&&!window.LD_NOADAPT&&t>2.5){fpsN++;fpsT+=dt;if(fpsN===80){if(fpsT/80>.034){lowQ=true;R3.setPixelRatio(1);spotL.castShadow=false;R3.setSize(W,H,false)}fpsN=0;fpsT=0}}
- for(let i=anims.length-1;i>=0;i--){const a=anims[i],k=Math.min(1,(now-a.t0)/a.dur);a.f(a.e(k));if(k>=1){anims.splice(i,1);a.res()}}
+ for(let i=anims.length-1;i>=0;i--){const a=anims[i];if(a.ep!==EP){anims.splice(i,1);a.res();continue}const k=Math.min(1,(now-a.t0)/a.dur);a.f(a.e(k));if(k>=1){anims.splice(i,1);a.res()}}
  if(Math.abs(liftT-lift)>.5){lift+=(liftT-lift)*Math.min(1,dt*5);cam.setViewOffset(W,H,0,lift,W,H);cam.updateProjectionMatrix()}
  const port=cam.aspect<1;look.x+=(look.tx-look.x)*.06;look.y+=(look.ty-look.y)*.06;zoom+=(zoomT-zoom)*Math.min(1,dt*3);
  fit+=(fitT-fit)*Math.min(1,dt*2.5);cam.position.set(Math.sin(look.x)*.3+(reduce?0:Math.sin(t*.45)*.025),(port?2.55:2.05)-look.y*.4-fit*.1,(port?4.6:3.75)-zoom*.15-fit*(port?.35:.5));
@@ -368,7 +373,7 @@ function setMsg(h){$("msg4").innerHTML=h;if(R3)measure()}
 function bubble(i,html,cls){const b=seats[i].bub;b.className="bubble "+(cls||"");b.innerHTML='<span class="bb">'+(cls==="think"?"<i></i><i></i><i></i>":html)+"</span>";b.hidden=false}
 function verdict(big,small,cls){const v=$("verdict");v.className="verdict "+(cls||"");v.innerHTML="<b>"+big+"</b><span>"+small+"</span>";v.hidden=false;measure()}
 
-function seatTable(){
+function seatTable(){EP++;
  for(const s of seats)if(s.g)scene.remove(s.g);$("overlay").innerHTML="";dicePool.forEach(a=>a.forEach(d=>{d.visible=false}));bidG.visible=bidGlow.visible=qtySp.visible=false;
  seats=[0,1,2,3].map(i=>{const s={i,dice:dicePool[i]};
   if(i===0){s.name="you";s.g=youG;s.cup=youCup;s.u=null}else{const n=pick[i-1];s.name=n;s.g=AV[n]||(AV[n]=makeAvatar(n));s.u=s.g.userData;s.cup=s.u.cup;resetAvatar(s.u)}
@@ -381,7 +386,7 @@ function newGame(){sizeTable(DICE);G={start:DICE,taught:false,counts:[DICE,DICE,
 function placeDice(i){const s=seats[i],n=G.counts[i],a=SA[i];
  s.dice.forEach((d,j)=>{d.visible=false;d.children[0].material=DM;d.scale.setScalar(d.userData.size);if(j>=n)return;setFace(d,G.hands[i][j]);diePos(i,j,n,d);
   d.rotation.y=i===0?(Math.random()-.5)*.16:-a+Math.PI/2+(Math.random()-.5)*.4})}
-async function newRound(){const g=G;G.phase="shake";G.round++;G.hands=G.counts.map(roll);G.last=G.prev=-1;G.hist=[];G.lastBy=-1;G.turn=G.starter;G.focus=null;G.wait=false;
+async function newRound(){const g=G;EP++;roundT0=performance.now();bidG.userData.fly=false;G.phase="shake";G.round++;G.hands=G.counts.map(roll);G.last=G.prev=-1;G.hist=[];G.lastBy=-1;G.turn=G.starter;G.focus=null;G.wait=false;
  $("verdict").hidden=true;zoomT=0;bidG.visible=bidGlow.visible=qtySp.visible=false;
  seats.forEach((s,i)=>{s.bub.hidden=true;const alive=G.counts[i]>0;s.cup.visible=alive;s.cup.position.set(i?0:youX,TY,i?.82:youZ);s.cup.rotation.set(0,0,0);placeDice(i);if(s.u){s.u.mood="neutral";s.u.hold=alive;s.u.gL=null}});
  log("Round "+G.round+" · "+sum(G.counts)+" dice in play","hd");setMsg("New round. Everyone shakes their cup…");render();SFX.rattle();
@@ -391,14 +396,14 @@ async function newRound(){const g=G;G.phase="shake";G.round++;G.hands=G.counts.m
   seats[0].dice.forEach((d,j)=>{if(j<G.counts[0]){d.visible=true;const sz=d.userData.size;anim(320+j*90,k=>d.scale.setScalar(sz*Math.max(.01,k)),k=>1-Math.pow(1-k,2))}});await sleep(480);if(G!==g)return}
  G.phase="play";loop()}
 function decide(s){const tot=sum(G.counts),o=obs(s),acts=legal(G.last,tot),order=[];let x=s;do{order.push(x);x=nextSeat(x)}while(x!==s);
- let a;try{a=policyOf(seats[s].name,G.start)(o,acts,{order,total:tot,hist:G.hist,counts:G.counts})}catch(e){a=mathBot(o,acts)}return acts.includes(a)?a:mathBot(o,acts)}
+ let a;try{a=policyOf(seats[s].name)(o,acts,{order,total:tot,hist:G.hist,counts:G.counts})}catch(e){a=mathBot(o,acts)}return acts.includes(a)?a:mathBot(o,acts)}
 async function loop(){if(looping)return;looping=true;const g=G;
  try{while(G===g&&G.phase==="play"&&G.turn!==0){const s=G.turn;setMood(s,"think");bubble(s,"","think");setMsg("<b>"+esc(who(s))+"</b> is thinking…");render();
    await sleep(950+Math.random()*450);if(G!==g||G.phase!=="play")return;const a=decide(s);setMood(s,"neutral");
    if(a===CALL){await reveal(s);return}await doBid(s,a)}
   if(G===g&&G.phase==="play"&&G.turn===0){SFX.turn();promptMe();render()}}finally{looping=false}}
 function flyBid(s,a){const p=seatPos(s,s?1.05:.95),ex=.2,ey=TY+.37;drawQty(bq(a));setFace(bidDie,bf(a));bidG.visible=true;bidGlow.visible=true;qtySp.visible=false;bidG.userData.fly=true;
- anim(460,k=>{bidG.position.set(p.x+(ex-p.x)*k,ey+Math.sin(k*Math.PI)*.38,p.z*(1-k));bidG.rotation.y=(1-k)*5;bidG.scale.setScalar(.45+.55*k)}).then(()=>{bidG.userData.fly=false;qtySp.visible=bidG.visible;qtySp.scale.set(.7,.35,1)})}
+ anim(460,k=>{bidG.position.set(p.x+(ex-p.x)*k,ey+Math.sin(k*Math.PI)*.38,p.z*(1-k));bidG.rotation.y=(1-k)*5;bidG.scale.setScalar(.45+.55*k)}).then(()=>{bidG.userData.fly=false;qtySp.visible=bidG.visible&&!!G&&G.last>=0;qtySp.scale.set(.7,.35,1)})}
 async function doBid(s,a){const g=G;G.prev=G.last;G.last=a;G.lastBy=s;G.hist.push([s,a]);G.wait=true;
  seats.forEach((x,i)=>{if(i!==s&&!x.bub.hidden)x.bub.classList.add("past")});bubble(s,bq(a)+" × "+pip(bf(a)));
  log("<span>"+esc(who(s))+" "+(s===0?"claim":"claims")+"</span><b>"+fw(bq(a),bf(a))+"</b>");gest(s,"bid");SFX.bid();flyBid(s,a);G.turn=nextSeat(s);G.focus=s;
@@ -423,7 +428,7 @@ async function reveal(s){const g=G,b=G.lastBy,q=bq(G.last),f=bf(G.last);G.phase=
  log("<span>"+(n?fw(n,f):"no "+FW[f])+" showing, "+(tru?"claim true":"claim false")+"</span><b>"+(loser===0?"you":esc(who(loser)))+" −1</b>");
  G.focus=loser;setMood(loser,"sad");setMood(winner,"happy");gest(winner,"hop");if(loser===0)SFX.lose();else if(winner===0)SFX.good();else SFX.bid();
  const ld=seats[loser].dice.slice(0,G.counts[loser]),dd=ld.find(d=>d.userData.v!==f)||ld[0],y0=dd.position.y,sz=dd.userData.size;
- anim(800,k=>{dd.position.y=y0+k*.9;dd.rotation.y+=.25;dd.scale.setScalar(sz*Math.max(.01,1-k))},k=>k*k).then(()=>{dd.visible=false});
+ const ep=EP;anim(800,k=>{dd.position.y=y0+k*.9;dd.rotation.y+=.25;dd.scale.setScalar(sz*Math.max(.01,1-k))},k=>k*k).then(()=>{if(ep===EP)dd.visible=false});
  G.counts[loser]--;G.starter=loser;
  if(G.counts[loser]===0){log("<span>"+esc(who(loser))+" "+(loser===0?"are":"is")+" out of dice</span>","hd");if(loser>0){const u=seats[loser].u;u.hold=false;u.bodyM.color.copy(u.base).lerp(lin("#6d7184"),.7);seats[loser].cup.visible=false}SFX.out()}
  while(G.counts[G.starter]===0)G.starter=(G.starter+1)%4;
@@ -461,7 +466,7 @@ function render(){if(!G)return;const tot=sum(G.counts),mine=myTurn(),acts=legal(
   const qmin=acts.length&&acts[0]!==CALL?bq(acts[0]):tot+1,qhi=Math.min(tot,Math.max(qmin+7+qMore,qS));let qh="";for(let q=qmin;q<=qhi;q++)qh+='<button data-q="'+q+'" aria-pressed="'+(q===qS)+'">'+q+"</button>";
   if(qhi<tot)qh+='<button data-more="1" aria-label="Show higher numbers">…</button>';$("qty4").innerHTML=qh||"<span class='lbl'>No higher claim is possible</span>";
   $("face4").innerHTML=[1,2,3,4,5,6].map(f=>'<button class="fc" data-f="'+f+'" aria-label="'+FW[f]+'" aria-pressed="'+(f===fS)+'" '+(ok(qS,f)?"":"disabled")+">"+pip(f)+"</button>").join("");
-  const can=ok(qS,fS),p=ptrue(qS,fS,G.hands[0],hid);$("bid4").disabled=!can;$("bid4").innerHTML=can?"Claim at least "+fw(qS,fS):"Pick a higher claim";
+  const can=ok(qS,fS),p=ptrue(qS,fS,G.hands[0],hid);$("bid4").disabled=!can;$("bid4").innerHTML=can?"Claim at least "+fw(qS,fS):acts.some(a=>a!==CALL)?"Pick a higher claim":"No higher claim left";
   $("liar4").disabled=G.last<0;$("liar4").textContent=G.last<0?"Liar! (nothing to call yet)":"Call Liar! on "+who(G.lastBy);
   $("odds").hidden=!COACH||!can;$("oddsbar").style.width=(p*100).toFixed(0)+"%";$("oddstxt").textContent=pct(p)+" likely, counting all "+tot+" dice · "+(p>=.75?"safe":p>=.5?"solid":p>=.25?"risky":"a bluff")}
  $("next4").hidden=!(G.phase==="between"&&G.counts[0]>0);$("again4").hidden=G.phase!=="over";
@@ -472,7 +477,7 @@ function lobby(){const WIN=WINS[DICE]||{},pos=["Left","Across","Right"],avail=Ob
  $("diceSeg").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",+b.dataset.d===DICE);b.onclick=()=>{DICE=+b.dataset.d;store.set("dice",DICE);lobby()}});
  $("seatpick").innerHTML=pos.map((p,i)=>'<label><span>'+p+'</span><select data-i="'+i+'">'+avail.map(n=>'<option value="'+n+'" '+(n===pick[i]?"selected":"")+">"+esc(NAMES[n])+"</option>").join("")+"</select><b>"+(WIN[pick[i]]!=null?pct(WIN[pick[i]])+" wins":"")+"</b><small>"+esc(STYLE[pick[i]])+"</small></label>").join("");
  $("seatpick").querySelectorAll("select").forEach(s=>s.onchange=()=>{const i=+s.dataset.i,j=pick.indexOf(s.value);if(j>=0&&j!==i)pick[j]=pick[i];pick[i]=s.value;store.set("pick",pick);if(R3&&(!G||G.phase==="over"))seatTable();lobby()});
- const rec=store.get("rec",[0,0]);$("lobbyNote").textContent="Win rates are from four-player games between the bots with "+DICE+" dice each (25% is average)."+(DICE>2?" With more than 2 dice the AIs play from a shortlist of sensible claims and the odds of each.":"")+(rec[0]+rec[1]?" Your record: "+rec[0]+" won, "+rec[1]+" lost.":"");
+ const rec=store.get("rec",[0,0]);$("lobbyNote").textContent="Win rates are from four-player games between the bots with "+DICE+" dice each (25% is average)."+(rec[0]+rec[1]?" Your record: "+rec[0]+" won, "+rec[1]+" lost.":"");
  $("coachChk").checked=COACH;$("lobby").hidden=false;menuText()}
 function menuText(){$("coachBtn").textContent="Coach tips: "+(COACH?"on":"off");$("sndBtn").textContent="Sound: "+(MUTE?"off":"on");$("spdBtn").textContent="Speed: "+(SPD===2?"fast":"normal");$("logBtn").textContent=$("logp").hidden?"Show table log":"Hide table log"}
 function setCoach(v){COACH=v;store.set("coach",v);$("coachChk").checked=v;menuText();if(myTurn()){promptMe();render()}}
@@ -482,7 +487,7 @@ $("spdBtn").onclick=()=>{SPD=SPD===2?1:2;store.set("spd",SPD);menuText()};
 $("logBtn").onclick=()=>{$("logp").hidden=!$("logp").hidden;menuText()};
 $("helpBtn").onclick=()=>{$("help").hidden=false};$("helpClose").onclick=()=>{$("help").hidden=true};
 $("lobbyBtn").onclick=()=>{$("menu").open=false;if(G)G=Object.assign({},G,{phase:"over"});$("verdict").hidden=true;$("build").hidden=true;$("next4").hidden=$("again4").hidden=true;setMsg("Pick your opponents to start.");lobby()};
-$("dealBtn").onclick=async()=>{audioOn();if(!R3)return;const b=$("dealBtn");b.disabled=true;b.textContent="Waking up the AIs…";const ok=await Promise.all(pick.map(n=>loadAgent(n,DICE)));b.disabled=false;b.textContent="Deal me in";
+$("dealBtn").onclick=async()=>{audioOn();if(!R3)return;const b=$("dealBtn");b.disabled=true;b.textContent="Waking up the AIs…";const ok=await Promise.all(pick.map(n=>loadAgent(n)));b.disabled=false;b.textContent="Deal me in";
 
  $("lobby").hidden=true;seatTable();newGame();const bad=pick.filter((n,i)=>!ok[i]);if(bad.length)log("<span>Couldn't load "+bad.map(n=>esc(NAMES[n])).join(", ")+"; playing by the raw odds instead.</span>")};
 $("bid4").onclick=async()=>{if(busy||!myTurn())return;audioOn();busy=true;try{await doBid(0,(qS-1)*6+fS-1)}finally{busy=false}loop()};
@@ -496,7 +501,7 @@ document.addEventListener("click",e=>{const m=$("menu");if(m.open&&!m.contains(e
 const view=$("view-table");
 window.LDTable={pause(){running=false;if(R3)R3.setAnimationLoop(null)},resume(){if(R3&&!running&&!document.hidden&&!view.hidden){running=true;clock.getDelta();R3.setAnimationLoop(frame)}}};
 document.addEventListener("visibilitychange",()=>{if(document.hidden)window.LDTable.pause();else window.LDTable.resume()});
-window.LDTest={get G(){return G},seats:()=>seats,low:()=>lowQ};
+window.LDTest={get G(){return G},seats:()=>seats,low:()=>lowQ,get t0(){return roundT0}};
 try{init3d();seatTable();G=null;window.LDTable.resume();setMsg("Pick your opponents to start.");lobby()}
 catch(e){setMsg("3D couldn't start on this device ("+esc(e.message)+").");$("lobby").hidden=true}
 })();

@@ -1,0 +1,10 @@
+{'step': 15000, 'vs_math': 0.304, 'sec': 43}
+{'step': 30000, 'vs_math': 0.35, 'sec': 91}
+{'step': 45000, 'vs_math': 0.358, 'sec': 138}
+{'step': 60000, 'vs_math': 0.267, 'sec': 185}
+{'step': 75000, 'vs_math': 0.312, 'sec': 251}
+{'step': 90000, 'vs_math': 0.25, 'sec': 306}
+{'step': 105000, 'vs_math': 0.292, 'sec': 353}
+{'step': 120000, 'vs_math': 0.308, 'sec': 401}
+{'step': 135000, 'vs_math': 0.354, 'sec': 448}
+{'step': 150000, 'vs_math': 0.321, 'sec': 498}

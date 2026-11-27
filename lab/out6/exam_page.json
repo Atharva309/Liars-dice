@@ -1,0 +1,550 @@
+{
+ "situations": 7102464,
+ "hardShare": 0.08,
+ "bots": {
+  "ppo": {
+   "acc": [
+    88.56,
+    93.32,
+    94.29
+   ],
+   "hard": [
+    24.19,
+    82.09,
+    86.95
+   ],
+   "lost": [
+    1,
+    0.87,
+    1.1
+   ],
+   "where": {
+    "badCall": 88.96,
+    "missedCall": 0.17,
+    "badRaise": 3.3,
+    "badOpen": 7.56
+   },
+   "sampled": false,
+   "hunter": {
+    "table2": [
+     [
+      45.17,
+      0.37
+     ],
+     [
+      59.79,
+      0.55
+     ],
+     [
+      57.15,
+      0.42
+     ]
+    ],
+    "duel2": [
+     [
+      80.39,
+      0
+     ],
+     [
+      90.95,
+      0
+     ],
+     [
+      94.94,
+      0
+     ]
+    ],
+    "table1": [
+     [
+      37,
+      0
+     ],
+     [
+      56.48,
+      0
+     ],
+     [
+      51.29,
+      0
+     ]
+    ],
+    "duel3": [
+     [
+      94.81,
+      0.01
+     ],
+     [
+      97.42,
+      0
+     ],
+     [
+      97.06,
+      0
+     ]
+    ]
+   }
+  },
+  "dqn": {
+   "acc": [
+    98.98,
+    87.04,
+    86.02
+   ],
+   "hard": [
+    92.94,
+    74.08,
+    79.45
+   ],
+   "lost": [
+    0.23,
+    1.84,
+    2.67
+   ],
+   "where": {
+    "badCall": 55.3,
+    "missedCall": 28.33,
+    "badRaise": 6.81,
+    "badOpen": 9.56
+   },
+   "sampled": false,
+   "hunter": {
+    "table2": [
+     [
+      79.63,
+      0
+     ],
+     [
+      74.62,
+      0
+     ],
+     [
+      82.75,
+      0
+     ]
+    ],
+    "duel2": [
+     [
+      94.68,
+      0
+     ],
+     [
+      96.63,
+      0
+     ],
+     [
+      90.73,
+      0
+     ]
+    ],
+    "table1": [
+     [
+      40.05,
+      0
+     ],
+     [
+      64.9,
+      0
+     ],
+     [
+      69.37,
+      0
+     ]
+    ],
+    "duel3": [
+     [
+      99.68,
+      0
+     ],
+     [
+      99.87,
+      0
+     ],
+     [
+      99.7,
+      0
+     ]
+    ]
+   }
+  },
+  "mc": {
+   "acc": [
+    86.71,
+    85.93,
+    95.79
+   ],
+   "hard": [
+    81.62,
+    83.67,
+    74.83
+   ],
+   "lost": [
+    3.63,
+    3.35,
+    0.7
+   ],
+   "where": {
+    "badCall": 15.99,
+    "missedCall": 23.3,
+    "badRaise": 11.76,
+    "badOpen": 48.96
+   },
+   "sampled": false,
+   "hunter": {
+    "table2": [
+     [
+      88.93,
+      0
+     ],
+     [
+      77.1,
+      0
+     ],
+     [
+      77.36,
+      0
+     ]
+    ],
+    "duel2": [
+     [
+      99.16,
+      0
+     ],
+     [
+      97.47,
+      0
+     ],
+     [
+      93.6,
+      0
+     ]
+    ],
+    "table1": [
+     [
+      75.06,
+      0
+     ],
+     [
+      68.84,
+      0
+     ],
+     [
+      65.2,
+      0
+     ]
+    ],
+    "duel3": [
+     [
+      99.57,
+      0
+     ],
+     [
+      99.82,
+      0
+     ],
+     [
+      99.31,
+      0
+     ]
+    ]
+   }
+  },
+  "nfsp": {
+   "acc": [
+    87.81,
+    87.74,
+    88.6
+   ],
+   "hard": [
+    64.07,
+    93.88,
+    86.6
+   ],
+   "lost": [
+    2.98,
+    2.62,
+    1.81
+   ],
+   "where": {
+    "badCall": 2.1,
+    "missedCall": 28.31,
+    "badRaise": 26.75,
+    "badOpen": 42.83
+   },
+   "sampled": false,
+   "hunter": {
+    "table2": [
+     [
+      81.37,
+      111.79
+     ],
+     [
+      59.65,
+      43.59
+     ],
+     [
+      61.96,
+      2.29
+     ]
+    ],
+    "duel2": [
+     [
+      91.47,
+      0
+     ],
+     [
+      87.95,
+      0
+     ],
+     [
+      86.69,
+      0
+     ]
+    ],
+    "table1": [
+     [
+      48.93,
+      0
+     ],
+     [
+      55.99,
+      0
+     ],
+     [
+      54.57,
+      0
+     ]
+    ],
+    "duel3": [
+     null,
+     [
+      96.83,
+      0.01
+     ],
+     [
+      96.63,
+      0
+     ]
+    ]
+   }
+  },
+  "cfr": {
+   "acc": [
+    86.99,
+    93.31,
+    95.82
+   ],
+   "hard": [
+    10.82,
+    81.94,
+    81.94
+   ],
+   "lost": [
+    1.64,
+    1.4,
+    0.84
+   ],
+   "where": {
+    "badCall": 22.98,
+    "missedCall": 23.86,
+    "badRaise": 33.51,
+    "badOpen": 19.64
+   },
+   "sampled": false,
+   "hunter": {
+    "table2": [
+     [
+      57.38,
+      0
+     ],
+     [
+      67.39,
+      0
+     ],
+     [
+      68.53,
+      0
+     ]
+    ],
+    "duel2": [
+     [
+      85.84,
+      0
+     ],
+     [
+      89.71,
+      0
+     ],
+     [
+      91.67,
+      0
+     ]
+    ],
+    "table1": [
+     [
+      36.1,
+      0
+     ],
+     [
+      48.76,
+      0
+     ],
+     [
+      44.88,
+      0
+     ]
+    ],
+    "duel3": [
+     [
+      93.02,
+      0
+     ],
+     [
+      95.95,
+      0
+     ],
+     [
+      97.34,
+      0
+     ]
+    ]
+   }
+  },
+  "ismcts": {
+   "acc": [
+    84.09,
+    null,
+    84.37
+   ],
+   "hard": [
+    43.07,
+    null,
+    58.9
+   ],
+   "lost": [
+    3.2,
+    null,
+    3.85
+   ],
+   "where": {
+    "badCall": 3.93,
+    "missedCall": 84.06,
+    "badRaise": 10.32,
+    "badOpen": 1.69
+   },
+   "sampled": true,
+   "hunter": {
+    "table2": [
+     null,
+     null,
+     null
+    ],
+    "duel2": [
+     null,
+     null,
+     null
+    ],
+    "table1": [
+     null,
+     null,
+     null
+    ],
+    "duel3": [
+     null,
+     null,
+     null
+    ]
+   }
+  },
+  "math": {
+   "acc": [
+    null,
+    null,
+    86.26
+   ],
+   "hard": [
+    null,
+    null,
+    0
+   ],
+   "lost": [
+    null,
+    null,
+    2.56
+   ],
+   "where": {
+    "badCall": 26.6,
+    "missedCall": 3.92,
+    "badRaise": 67.96,
+    "badOpen": 1.52
+   },
+   "sampled": false,
+   "hunter": {
+    "table2": [
+     null,
+     null,
+     [
+      69.27,
+      0
+     ]
+    ],
+    "duel2": [
+     null,
+     null,
+     [
+      78.88,
+      0
+     ]
+    ],
+    "table1": [
+     null,
+     null,
+     [
+      38.93,
+      0
+     ]
+    ],
+    "duel3": [
+     null,
+     null,
+     [
+      91.75,
+      0
+     ]
+    ]
+   }
+  }
+ },
+ "orig": {
+  "table2": [
+   42,
+   56,
+   3
+  ],
+  "duel2": [
+   71,
+   90,
+   5
+  ],
+  "table1": [
+   35,
+   43,
+   5
+  ],
+  "duel3": null
+ },
+ "takeaways": [
+  [
+   "Retraining taught the hard decisions",
+   "On the questions where the raw odds mislead, the Game Theorist went from 11% to 82% and the Gut Player from 24% to 87%. Four of the five learners now score higher on the whole paper than their first version did. The Exploiter scores lower."
+  ],
+  [
+   "It did not make them harder to exploit",
+   "At a four-player table with 2 dice each, the hunter wins more against today's Gut Player (45% before, 57% now), Exploiter (80%, 83%) and Game Theorist (57%, 69%) than against their first versions. Only the Old-Schooler and the Hybrid got harder to exploit."
+  ],
+  [
+   "A high mark is not the same as safe",
+   "The first Exploiter scored 99% on the answer key, yet the hunter beats it in 95% of duels. It plays good moves but always the same ones, so a counter-strategy can be built around them. That is why the exam needs both papers."
+  ]
+ ],
+ "method": "Paper A covers one-on-one rounds with 1 die each and with 2 dice against 1. The answer key is within 0.002 points of perfect play, measured by what a best reply could still gain. A move counts as correct if it gives up at most half a point of round-win chance. Paper B is an exact best reply to each bot's move chances, playing whole games down from the starting dice. The hunter knows the bot's habits exactly, so its score is a worst case, not what a person at the table would get. As a spot check, several cases from each paper were also played out for 20,000 to 30,000 real games with the code that runs the table, and matched the computed figures."
+}

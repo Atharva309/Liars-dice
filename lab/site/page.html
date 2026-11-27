@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liar's Dice Invitational</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a dice-hall tournament programme: playful names, plain words, every number real.
+   IDEA: a four-chapter programme you page through (the bots, how they trained, results, the exam), then the table itself.
+   PICTURE: each chapter opens on its own graphic: the line-up of pawns, the training loop, the standings bars, the exam marks.
+   COLOUR and TYPE: cobalt felt, bone dice, one hot coral; Archivo Black titles over Archivo text.
+   LAYOUT: sticky chapter tabs, one column of full-width bands, a "next chapter" button closing each. */
+:root{color-scheme:light dark;
+--bg:light-dark(#f6f7fb,#0a1236);--ink:light-dark(#0b1440,#eef1ff);--mut:light-dark(#4a5580,#a9b3e0);
+--felt:light-dark(#1d3fd6,#2c4be0);--card:light-dark(#fff,#111c4d);--line:light-dark(#dde2f2,#24316e);--soft:light-dark(#e9edfb,#162160);
+--hot:#ff5a4e;--bone:#fbfaf7;--pip:#0b1440}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Archivo,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Archivo Black",Archivo,sans-serif;font-weight:400;line-height:1.05;text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,6vw,52px)}h2{font-size:clamp(26px,3.6vw,36px);margin-bottom:8px}h3{font-size:19px}
+p{margin:0}
+.band{padding:clamp(28px,4vw,56px) max(5vw,16px)}.wrap{max-width:1180px;margin:0 auto}
+.alt{background:var(--card);border-block:1px solid var(--line)}
+.lede{max-width:66ch;color:var(--mut);margin-top:12px;font-size:17px}
+.sub{color:var(--mut);margin:0 0 22px;max-width:70ch}
+.note{font-size:13px;color:var(--mut);margin-top:14px;max-width:80ch}
+button{font:600 16px Archivo,sans-serif;min-height:44px;border-radius:12px;border:0;padding:0 16px;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+.next{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:8px}
+.next a{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px;text-decoration:none}
+.next a.hotb{background:var(--hot);color:#fff}.next span{color:var(--mut)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px}@media(max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.die{width:1.5em;height:1.5em;vertical-align:-.38em}
+/* chapter 1 */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;align-items:end}
+@media(max-width:860px){.hero{grid-template-columns:minmax(0,1fr)}}
+.lineup{display:flex;align-items:flex-end;justify-content:center;gap:clamp(0px,.6vw,8px);background:radial-gradient(120% 100% at 50% 0%,var(--felt),#122a9c);border-radius:22px;padding:26px 14px 0;overflow:hidden}
+.lineup svg{flex:1 1 0;max-width:96px;height:auto;margin-bottom:-4px}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}@media(max-width:760px){.rules{grid-template-columns:minmax(0,1fr)}}
+.rule{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:16px}
+.rule b{display:block;font-size:17px;margin-bottom:4px}.rule p{color:var(--mut);font-size:15px}
+.rule .ex{display:flex;gap:6px;align-items:center;margin-bottom:10px;min-height:40px;flex-wrap:wrap}.rule .ex svg{width:34px;height:34px}
+.rule .ex .q{width:34px;height:34px;border-radius:8px;background:var(--pip);color:var(--bone);display:grid;place-items:center;font:400 18px "Archivo Black"}
+.rule .ex .say{background:var(--pip);color:var(--bone);border-radius:10px;padding:6px 10px;font-weight:700}.rule .ex .say.h{background:var(--hot);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.bot{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto auto 1fr auto;gap:4px 14px;align-items:start}
+.bot svg{width:64px;height:auto;grid-row:1/4}
+.bot .mth{font-size:13px;font-weight:700;color:var(--mut);grid-column:2}
+.bot p{font-size:15px;color:var(--mut);grid-column:2}
+.bot .facts{grid-column:1/3;display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}
+.bot .facts b{font-variant-numeric:tabular-nums}
+/* chapter 2 */
+.loop{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;counter-reset:s}
+@media(max-width:1000px){.loop{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.loop{grid-template-columns:minmax(0,1fr)}}
+.step{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;counter-increment:s}
+.step h3::before{content:counter(s);display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--hot);color:#fff;font-size:16px;margin-right:8px;vertical-align:2px}
+.step p{font-size:15px;color:var(--mut)}.step .viz{margin-top:auto;padding-top:10px}
+.seats{display:flex;gap:4px;align-items:flex-end}.seats svg{width:38px;height:auto}
+.mini{display:grid;grid-template-columns:minmax(0,1fr) 3.2em;gap:4px 8px;align-items:center;font-size:13px}
+.mini .t{grid-column:1/3;color:var(--mut)}.mini .b{height:14px;border-radius:5px;background:var(--soft);overflow:hidden}.mini .b i{display:block;height:100%;border-radius:5px;background:var(--felt)}.mini .b.h i{background:var(--hot)}
+.mini b{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:15px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--mut);font-weight:700}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:9em}
+td b{white-space:nowrap}.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:8px}
+.scroll{overflow-x:auto}
+.fig{position:relative;min-height:340px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:14px;color:var(--mut);margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+/* chapter 3 */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:22px}@media(max-width:760px){.kpis{grid-template-columns:minmax(0,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.kpi b{display:block;font:400 clamp(34px,5vw,48px)/1 "Archivo Black",sans-serif;color:var(--felt)}.kpi span{display:block;margin-top:6px;color:var(--mut);font-size:15px}
+.seg2{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px}.seg2 button{background:var(--card);color:var(--ink);border:1px solid var(--line)}.seg2 button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lb{display:grid;gap:9px}
+.row{display:grid;grid-template-columns:1.8em minmax(0,10.5em) minmax(0,1fr) 3.4em;gap:10px;align-items:center}
+.row .rk{font-family:"Archivo Black";font-size:20px;color:var(--mut)}
+.row .nm b{display:block;line-height:1.2}.row .nm span{font-size:13px;color:var(--mut)}
+.bar{height:28px;background:var(--soft);border-radius:8px;position:relative}.bar i{display:block;height:100%;border-radius:8px}
+.bar.ref::after{content:"";position:absolute;top:-4px;bottom:-4px;left:var(--ref);width:2px;background:var(--ink);opacity:.55}
+.row .val{font-family:"Archivo Black";text-align:right;white-space:nowrap}
+@media(max-width:560px){.row{grid-template-columns:1.5em minmax(0,1fr) 3.2em;row-gap:6px}.row .rk,.row .nm,.row .val{grid-row:1}.row .val{grid-column:3}.row .bar{grid-column:2/4;grid-row:2;height:22px}}
+.reflab{font-size:13px;color:var(--mut);margin-top:10px}
+.hm{display:grid;gap:3px;font-size:13px;grid-template-columns:8.6em repeat(var(--n,8),minmax(40px,1fr))}
+.hm div{display:flex;align-items:center;justify-content:center;min-height:40px;border-radius:6px;font-variant-numeric:tabular-nums}
+.hm .h{background:transparent;color:var(--mut);font-weight:600;justify-content:flex-end;padding-right:6px;text-align:right}
+.hm .c{writing-mode:vertical-rl;transform:rotate(180deg);min-height:104px;justify-content:flex-start;color:var(--mut);font-weight:600;background:transparent}
+.meter{display:inline-block;width:64px;height:8px;border-radius:4px;background:var(--soft);overflow:hidden;vertical-align:middle;margin-right:8px}.meter i{display:block;height:100%}
+@media(max-width:600px){table{font-size:13px}th,td{padding:8px 6px}.meter{width:26px;margin-right:5px}.hm{grid-template-columns:6.6em repeat(var(--n,8),minmax(0,1fr));font-size:11px;gap:2px}.hm div{min-height:32px}.hm .h{padding-right:4px}.hm .c{min-height:86px}}
+#styletab td{white-space:nowrap}
+@media(max-width:600px){td.num,th.num{min-width:0}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:6.6em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:6.1em;margin-inline-start:-6.6em;white-space:normal;color:var(--mut);font-size:13px}.stack td:empty{display:none}}
+/* chapter 4 */
+.rules.two{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:760px){.rules.two{grid-template-columns:minmax(0,1fr)}}
+.leaks{display:grid;gap:14px}.rule .ex .who{font-size:13px;font-weight:700;color:var(--mut)}
+.chg{font-weight:700;white-space:nowrap}.chg.dn{color:var(--hot)}.chg.up{color:light-dark(#0a7a5e,#3fd6ae)}
+#exA td.num,#exA th.num,#exW td.num,#exW th.num{min-width:0}#exA td.now{font-weight:700}
+@media(max-width:600px){.wd{display:none}#exA th,#exA td{padding-inline:4px}#exA .dot{margin-right:5px}}
+.lb.wide .row{grid-template-columns:1.8em minmax(0,13.5em) minmax(0,1fr) 4em}@media(max-width:560px){.lb.wide .row{grid-template-columns:1.5em minmax(0,1fr) 4em}}
+.tick{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font:400 18px "Archivo Black";background:var(--felt);color:#fff}.tick.x{background:var(--hot)}
+<!--TABLECSS-->
+</style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script></head><body>
+<nav class="nav" aria-label="Chapters"><a href="#bots" data-v="bots">The bots</a><a href="#training" data-v="training">Training</a><a href="#results" data-v="results">Results</a><a href="#exam" data-v="exam">Exam</a><a href="#table" data-v="table" class="playtab">Play</a></nav>
+
+<main id="view-bots">
+<header class="band"><div class="wrap hero">
+ <div><h1>Six ways to learn to bluff</h1>
+ <p class="lede">Liar's Dice is a game of hidden dice and confident lies. We built six AIs that each learn it by a different method, trained them twice, and made them play each other tens of thousands of times. This is their story in four short chapters. Then you can sit down and play them.</p></div>
+ <div class="lineup" id="lineup" role="img" aria-label="The eight players lined up at the table"></div>
+</div></header>
+<section class="band alt"><div class="wrap">
+ <h2>The game in 30 seconds</h2>
+ <p class="sub">Everything the bots learn comes down to these three rules.</p>
+ <div class="rules">
+  <div class="rule"><div class="ex" id="ex1"></div><b>Everyone hides their dice</b><p>Each player rolls under a cup. You see your own dice and nobody else's.</p></div>
+  <div class="rule"><div class="ex"><span class="say">at least 3 fives</span><span class="say">4 fives</span></div><b>Claim, and keep raising</b><p>A claim is about every die on the table, counted together. Each one must beat the last. You can claim more dice than you hold, and you can lie.</p></div>
+  <div class="rule"><div class="ex"><span class="say h">Liar!</span></div><b>Or call the last claim</b><p>All cups lift. If the claim was true the caller loses a die, if not the claimer does. Last player with dice wins.</p></div>
+ </div>
+</div></section>
+<section class="band"><div class="wrap">
+ <h2>Meet the players</h2>
+ <p class="sub">Six learners, each built on a different idea from AI research, and two hand-written bots to measure them against.</p>
+ <div class="cards" id="botcards"></div>
+ <div class="next" style="margin-top:28px"><span>Chapter 1 of 4</span><a href="#training">Next: how they trained</a></div>
+</div></section>
+</main>
+
+<main id="view-training" hidden>
+<header class="band"><div class="wrap">
+ <h1>Nobody taught them a strategy</h1>
+ <p class="lede">Every learner started out making random claims. Each then played hundreds of thousands of rounds and adjusted itself a little after every one. This is the loop they all ran.</p>
+</div></header>
+<section class="band alt"><div class="wrap">
+ <div class="loop">
+  <div class="step"><h3>Sit down with a crowd</h3><p>Each practice round seats the learner with a mix of opponents: copies of itself, the earlier version of every bot, and the Math Bot. Beating only yourself teaches bad habits.</p><div class="viz seats" id="vizSeats"></div></div>
+  <div class="step"><h3>Read the table</h3><p>The bot sees a shortlist of up to 24 claims and the chance each is true. That chance moves with the bidding: someone who keeps claiming fives probably holds some.</p><div class="viz mini" id="vizRead"></div></div>
+  <div class="step"><h3>Get one number back</h3><p>When the round ends, the bot is told how much its chance of winning the whole game just moved. Losing a die hurts more the fewer you have left.</p><div class="viz mini" id="vizReward"></div></div>
+  <div class="step"><h3>Adjust, and repeat</h3><p>The bot nudges itself toward whatever tends to raise that number, then plays again. How it does the nudging is the one thing that differs between them.</p><div class="viz mini" id="vizRounds"></div></div>
+ </div>
+</div></section>
+<section class="band"><div class="wrap">
+ <h2>What each one does with that number</h2>
+ <p class="sub">Same game, same feedback, six different ways of learning from it.</p>
+ <div class="scroll"><table class="stack" id="howtab"><thead><tr><th>Bot</th><th>Method</th><th>How it learns</th><th class="num">Practice</th></tr></thead><tbody></tbody></table></div>
+</div></section>
+<section class="band alt"><div class="wrap grid2">
+ <div><h2>Trained twice</h2>
+ <p class="sub">The first version learned the basics. The second version, the one you play now, changed five things.</p>
+ <div class="scroll"><table><thead><tr><th></th><th>First version</th><th>Now</th></tr></thead><tbody>
+  <tr><td><b>Opponents</b></td><td>Mostly copies of itself</td><td>Itself, every earlier bot, the Math Bot, then each other</td></tr>
+  <tr><td><b>Odds</b></td><td>Pure chance: every hidden die is 1 in 6</td><td>Adjusted by what each player has bid</td></tr>
+  <tr><td><b>Rewarded for</b></td><td>Not losing a die this round</td><td>Raising its chance of winning the game</td></tr>
+  <tr><td><b>Options per turn</b></td><td>Up to 18 claims</td><td>Up to 24 claims</td></tr>
+  <tr><td><b>The Thinker</b></td><td>Assumes everyone plays the raw odds</td><td>Simulates with a learned model of the others</td></tr>
+ </tbody></table></div></div>
+ <div><h2>Getting better as they go</h2>
+ <p class="sub">Win rate during training at a table with three of the first version's best bots. Above the dashed line means stronger than them.</p>
+ <div class="fig" id="curveFig"><svg id="curve" role="img" aria-label="Training curves"></svg></div>
+ <div class="legend" id="curveLegend"></div></div>
+</div></section>
+<section class="band"><div class="wrap"><div class="next"><span>Chapter 2 of 4</span><a href="#results">Next: the results</a></div></div></section>
+</main>
+
+<main id="view-results" hidden>
+<header class="band"><div class="wrap">
+ <h1 id="resTitle">The results</h1>
+ <p class="lede" id="resLede"></p>
+ <div class="kpis" id="kpis"></div>
+</div></header>
+<section class="band alt"><div class="wrap grid2">
+ <div><h2>Four at a table</h2>
+ <p class="sub">Share of games won, random seatings, all eight players in the pool. With four seats, an average player wins 25%.</p>
+ <div class="seg2" id="seg4"><button data-m="5">5 dice each</button><button data-m="3">3 dice</button><button data-m="2">2 dice</button></div>
+ <div class="lb" id="lb4"></div><p class="reflab">The line marks 25%, an even share.</p></div>
+ <div><h2>New against old</h2>
+ <p class="sub">Each new bot at a table with three copies of its first version, 5 dice each. If training changed nothing it would win 25%.</p>
+ <div class="lb" id="lbOld"></div><p class="reflab" id="oldNote"></p></div>
+</div></section>
+<section class="band"><div class="wrap grid2">
+ <div><h2>One on one</h2>
+ <p class="sub">Every pairing head to head, 5 dice each. Each cell is how often the row's bot beat the column's.</p>
+ <div class="scroll"><div class="hm" id="hm"></div></div>
+ <div class="legend"><span><i style="background:var(--hot)"></i>row wins more</span><span><i style="background:#1d3fd6"></i>column wins more</span></div></div>
+ <div><h2>How they play</h2>
+ <p class="sub">From every claim and call in the 5-dice tournament. A bluff here is a claim the bot's own dice say is more likely false than true.</p>
+ <div class="scroll"><table id="styletab"><thead><tr><th>Bot</th><th>Bluffs</th><th>Calls Liar!</th><th>Right when calling</th></tr></thead><tbody></tbody></table></div></div>
+</div></section>
+<section class="band alt"><div class="wrap">
+ <h2>What to take from it</h2>
+ <div id="takeaways" class="rules" style="margin-top:14px"></div>
+ <p class="note" id="method"></p>
+ <div class="next" style="margin-top:24px"><span>Chapter 3 of 4</span><a href="#exam">Next: the exam</a></div>
+</div></section>
+</main>
+
+<main id="view-exam" hidden>
+<header class="band"><div class="wrap">
+ <h1>Then we set them an exam</h1>
+ <p class="lede">Win rates only say how the bots do against each other. If they all share a bad habit, nobody punishes it and the numbers still look fine. So we wrote a test with right answers. It has two papers, and both are worked out exactly instead of estimated from games.</p>
+ <div class="kpis" id="exKpis"></div>
+</div></header>
+<section class="band alt"><div class="wrap">
+ <h2>Two papers</h2>
+ <div class="rules two" style="margin-top:14px">
+  <div class="rule"><div class="ex" id="exIconA"></div><b>Paper A: the answer key</b><p id="exAbout"></p></div>
+  <div class="rule"><div class="ex" id="exIconB"></div><b>Paper B: the hunter</b><p>For each bot we worked out the best possible counter-strategy against that one bot, knowing all of its habits. Nothing can beat the bot by more. A bot with no exploitable habits would hold the hunter to an even share.</p></div>
+ </div>
+</div></section>
+<section class="band"><div class="wrap grid2">
+ <div><h2>Paper A: the answer key</h2>
+ <p class="sub">Share of moves that are the best move, or within half a point of it. Three versions of each bot sat the same paper: the first version, the one halfway through retraining, and the one at the table now.</p>
+ <div class="seg2" id="segA"><button data-m="acc">All questions</button><button data-m="hard">Hard questions</button></div>
+ <div class="scroll"><table id="exA"><thead><tr><th>Bot</th><th class="num">First<span class="wd"> version</span></th><th class="num">Halfway</th><th class="num">Now</th><th class="num">Change</th></tr></thead><tbody></tbody></table></div>
+ <p class="reflab" id="exANote"></p></div>
+ <div><h2>Where the marks go</h2>
+ <p class="sub">Each current bot against the perfect player. Marks lost is the chance of winning the round it gives up per decision, in percentage points.</p>
+ <div class="scroll"><table id="exW"><thead><tr><th>Bot</th><th class="num">Marks lost</th><th>Costliest habit</th></tr></thead><tbody></tbody></table></div></div>
+</div></section>
+<section class="band alt"><div class="wrap grid2">
+ <div><h2>Paper B: the hunter</h2>
+ <p class="sub" id="exBSub"></p>
+ <div class="seg2" id="segB"><button data-m="table2">Table, 2 dice each</button><button data-m="duel2">Duel, 2 dice each</button><button data-m="table1">Table, 1 die each</button><button data-m="duel3">Duel, 3 dice each</button></div>
+ <div class="lb wide" id="exB"></div><p class="reflab" id="exBNote"></p></div>
+ <div><h2>Two leaks to try</h2>
+ <p class="sub">Both come straight from the hunter's plan, and both work at the table when it is down to you and one bot with 2 dice each.</p>
+ <div class="leaks">
+  <div class="rule"><div class="ex"><span class="who">You</span><span class="say">at least 2 ones</span><span class="who">Exploiter</span><span class="say">3 ones</span><span class="who">You</span><span class="say h">Liar!</span></div>
+   <b>The Exploiter always raises</b><p>Open with two of a low number you do not hold: ones, twos or threes. It answers with three of the same number every time, whatever it holds. With only its own 2 dice to count on, that cannot be true. Call it.</p></div>
+  <div class="rule"><div class="ex"><span class="who">Gut Player</span><span class="say">at least 1 two</span><span class="who">You</span><span class="say h">Liar!</span></div>
+   <b>The Gut Player opens with a number it lacks</b><p>When it makes the first claim of the round, it names a number it does not hold. Call Liar unless you hold that number yourself. If you do hold it, the claim is true, so raise instead.</p></div>
+ </div></div>
+</div></section>
+<section class="band"><div class="wrap">
+ <h2>What the exam says</h2>
+ <div id="exTake" class="rules" style="margin-top:14px"></div>
+ <p class="note" id="exMethod"></p>
+ <div class="next" style="margin-top:24px"><span>Chapter 4 of 4</span><a class="hotb" href="#table">Now play them yourself</a></div>
+</div></section>
+</main>
+
+<!--TABLEHTML-->
+<script>
+const D=/*DATA*/;
+{
+const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct=v=>Math.round(v*100)+"%";
+const N={cfr:"Game Theorist",dqn:"Exploiter",ppo:"Gut Player",nfsp:"Hybrid",ismcts:"Thinker",mc:"Old-Schooler",math:"Math Bot",random:"Random Bot"};
+const COL={cfr:"#ff5a4e",ismcts:"#ffb020",ppo:"#13b38a",nfsp:"#9b5cff",mc:"#2ba8ff",dqn:"#ff4fb0",math:"#8a93a8",random:"#c9cede"};
+const WOOD={cfr:"#ecc9a0",dqn:"#c08a5c",ppo:"#f1d9b5",nfsp:"#d7a274",ismcts:"#e4bd88",mc:"#a86c46",math:"#aeb6c8",random:"#e3e6ef"};
+const METHOD={cfr:"Regret minimization (CFR)",dqn:"Deep Q-learning (DQN)",ppo:"Policy gradient (PPO)",nfsp:"Fictitious self-play (NFSP)",ismcts:"Tree search (ISMCTS)",mc:"Monte Carlo control",math:"Hand-written",random:"Hand-written"};
+const ABOUT={cfr:"Keeps a tally of every move it wishes it had made, and leans toward the ones it regrets skipping. The family of methods that beat poker professionals.",
+ dqn:"Learns a score for every move in every situation and always plays the highest. Ruthless, and a little predictable.",
+ ppo:"Learns how often to make each move rather than which one is best, so it mixes its play and is hard to read.",
+ nfsp:"Two networks in one head: one hunts for the best reply to its opponents, the other averages how it has played so far.",
+ ismcts:"Does no practice of its own. On every turn it imagines what the others might hold and plays the round out hundreds of times.",
+ mc:"The simplest learner here. A big lookup table of situations, nudged up or down by how each round ended.",
+ math:"No learning. It makes the most likely claim it can, and calls when the odds say the last claim is false.",
+ random:"No learning and no plan. It is here to show what zero skill looks like."};
+const LEARN={cfr:"After each round it asks how much better every other move would have gone, and shifts toward the ones it regrets not making.",
+ dqn:"Keeps a running estimate of how well things go after each move, then always picks the highest.",
+ ppo:"Makes the moves that came before good results a little more likely, and the others a little less.",
+ nfsp:"One network learns the best reply to the current opponents. A second copies the average of what the first has done.",
+ mc:"Looks up the situation in a table and moves that entry toward the result it just got.",
+ ismcts:"No training. It borrows a compact copy of the Gut Player to predict everyone's moves while it simulates."};
+const ORDER=["ppo","dqn","mc","nfsp","cfr","ismcts","math","random"],AIS=ORDER.slice(0,6);
+const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[28,28],[50,50],[72,72]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
+const die=f=>`<svg class="die" viewBox="0 0 100 100" aria-label="${f}"><rect x="4" y="4" width="92" height="92" rx="20" fill="#fbfaf7" stroke="#0b144033" stroke-width="3"/>${PIPS[f].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="9" fill="#0b1440"/>`).join("")}</svg>`;
+// a small pawn portrait for each player, echoing the 3D characters at the table
+function pawn(n){const c=COL[n],w=WOOD[n],k="#1b1420",robot=n==="math"||n==="random";
+ const body=`<path d="M22 118 C20 86 34 76 38 62 L62 62 C66 76 80 86 78 118 Z" fill="${c}"/><ellipse cx="50" cy="118" rx="30" ry="6" fill="#00000030"/>`;
+ let head=robot?`<rect x="27" y="22" width="46" height="40" rx="8" fill="${w}"/><rect x="32" y="29" width="36" height="24" rx="4" fill="#0b1030"/><rect x="37" y="35" width="8" height="${n==="random"?13:9}" fill="${n==="math"?"#7df9ff":"#ffd84a"}"/><rect x="55" y="35" width="8" height="9" fill="${n==="math"?"#7df9ff":"#ffd84a"}"/>`
+  :`<circle cx="50" cy="40" r="24" fill="${w}"/><circle cx="41" cy="38" r="3.2" fill="${k}"/><circle cx="59" cy="38" r="3.2" fill="${k}"/><path d="M43 49 Q50 55 57 49" stroke="${k}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+ const acc={cfr:`<circle cx="41" cy="38" r="6.5" fill="none" stroke="#d8a84a" stroke-width="2"/><circle cx="59" cy="38" r="6.5" fill="none" stroke="#d8a84a" stroke-width="2"/><path d="M47.5 38h5" stroke="#d8a84a" stroke-width="2"/><circle cx="27" cy="34" r="7" fill="#d9d9df"/><circle cx="73" cy="34" r="7" fill="#d9d9df"/><path d="M42 64l8 5 8-5v9l-8-4-8 4z" fill="#162058"/>`,
+  ismcts:`<rect x="34" y="-4" width="32" height="24" rx="2" fill="#15131c"/><rect x="24" y="17" width="52" height="5" rx="2.5" fill="#15131c"/><rect x="34" y="12" width="32" height="5" fill="${"#ff5a4e"}"/><circle cx="59" cy="38" r="6.5" fill="none" stroke="#d8a84a" stroke-width="2"/><path d="M40 46q5-4 10 0q5-4 10 0" stroke="${k}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`,
+  ppo:`<path d="M27 30a23 20 0 0 1 46 0z" fill="#0a6e55"/><path d="M50 26h30l-4 5H50z" fill="#0a6e55"/><path d="M34 66q16 10 32 0v8q-16 8-32 0z" fill="#0a7a5e"/>`,
+  dqn:`<path d="M27 32a23 21 0 0 1 46 0q-23-9-46 0z" fill="${k}"/><rect x="33" y="33" width="15" height="9" rx="4" fill="#1a0f24"/><rect x="52" y="33" width="15" height="9" rx="4" fill="#1a0f24"/><path d="M48 37h4" stroke="#1a0f24" stroke-width="2"/><path d="M36 62l14 8 14-8v6l-14 8-14-8z" fill="#f7f3ea"/>`,
+  nfsp:`<path d="M27 34a23 22 0 0 1 23-22v12q-14 0-23 10z" fill="#4e2e80"/><path d="M73 34a23 22 0 0 0-23-22v12q14 0 23 10z" fill="#d9dce6"/><path d="M26 40a24 26 0 0 1 48 0" fill="none" stroke="#d9dce6" stroke-width="4"/><rect x="20" y="34" width="9" height="14" rx="4" fill="#4e2e80"/><rect x="71" y="34" width="9" height="14" rx="4" fill="#d9dce6"/>`,
+  mc:`<path d="M31 22a19 17 0 0 1 38 0z" fill="#23262f"/><rect x="22" y="20" width="56" height="5" rx="2.5" fill="#23262f"/><rect x="31" y="16" width="38" height="4" fill="${c}"/><path d="M38 47q6-5 12 0q6-5 12 0q-5 6-12 2q-7 4-12-2z" fill="#d9d9df"/>`,
+  math:`<path d="M50 22V8" stroke="${k}" stroke-width="2.5"/><circle cx="50" cy="7" r="4" fill="#ff5a4e"/><rect x="38" y="80" width="24" height="14" rx="3" fill="#0b1030"/><circle cx="44" cy="87" r="2.4" fill="#7df9ff"/><circle cx="50" cy="87" r="2.4" fill="#ffd84a"/><circle cx="56" cy="87" r="2.4" fill="#ff5a4e"/>`,
+  random:`<path d="M58 22l8-26 8 22z" fill="#ffd84a"/><path d="M61 12l10-1M59.5 17l12 0" stroke="#ff5a4e" stroke-width="3"/><circle cx="66" cy="-5" r="4" fill="#f7f3ea"/><rect x="40" y="78" width="20" height="18" rx="3" fill="#0b1030"/><text x="50" y="92" text-anchor="middle" font-size="15" font-weight="700" fill="#ffd84a" font-family="Archivo,sans-serif">?</text>`}[n];
+ return `<svg viewBox="0 -12 100 140" aria-hidden="true">${body}${head}${acc}</svg>`}
+// ---------- chapter 1 ----------
+$("lineup").innerHTML=["random","mc","nfsp","ppo","ismcts","dqn","cfr","math"].map(pawn).join("");
+$("ex1").innerHTML=die(2)+die(5)+die(5)+'<span class="q">?</span><span class="q">?</span><span class="q">?</span>';
+const ST=D.league[5].style;
+$("botcards").innerHTML=ORDER.map(n=>`<div class="bot">${pawn(n)}<h3>${esc(N[n])}</h3><span class="mth">${esc(METHOD[n])}</span><p>${esc(ABOUT[n])}</p>
+ <div class="facts"><span>Wins <b>${pct(D.league[5].win[n])}</b> of 4-player games</span><span>Bluffs on <b>${pct(ST[n].bluff)}</b> of claims</span><span>Calls Liar! <b>${pct(ST[n].call)}</b> of chances</span></div></div>`).join("");
+// ---------- chapter 2 ----------
+$("vizSeats").innerHTML=["ppo","dqn","math","mc"].map(pawn).join("");
+const mini=(t,rows)=>`<span class="t">${t}</span>`+rows.map(r=>`<span class="b ${r[2]||""}"><i style="width:${Math.round(r[1]*100)}%"></i></span><b>${pct(r[1])}</b>`).join("");
+$("vizRead").innerHTML=mini("Chance a player with 5 dice holds two or more fives",[[0,D.model.base2],[0,D.model.bid2,"h"]])+`<span class="t">top: before they speak · bottom: after they claim fives once</span>`;
+$("vizReward").innerHTML=mini("Chance of winning the game with four players",[[0,D.model.w55],[0,D.model.w45,"h"]])+`<span class="t">top: everyone has 5 dice · bottom: you drop to 4</span>`;
+$("vizRounds").innerHTML=`<span class="t">Practice rounds per bot</span><b style="grid-column:1/3;text-align:left;font:400 26px 'Archivo Black',sans-serif">${D.train.min} to ${D.train.max}</b><span class="t">about ${D.train.minutes} minutes each on one CPU core</span>`;
+$("howtab").querySelector("tbody").innerHTML=AIS.map(n=>`<tr><td><b><span class="dot" style="background:${COL[n]}"></span>${esc(N[n])}</b></td><td>${esc(METHOD[n])}</td><td>${esc(LEARN[n])}</td><td class="num">${esc(D.train.rounds[n])}</td></tr>`).join("");
+const cs=$("curve"),CN=["ppo","dqn","mc","nfsp","cfr"];
+$("curveLegend").innerHTML=CN.map(n=>`<span><i style="background:${COL[n]}"></i>${esc(N[n])}</span>`).join("")+`<span><i style="background:transparent;border:2px dashed var(--mut)"></i>level with the old best</span>`;
+const ymax=Math.max(.5,Math.ceil(Math.max(...CN.flatMap(n=>D.curves[n].map(p=>p[1])))*10)/10);
+const drawC=()=>{const W=cs.clientWidth,H=cs.clientHeight,L=42,R=12,T=10,B=30,x=v=>L+v*(W-L-R),y=v=>T+(1-v/ymax)*(H-T-B);let s="";
+ for(let v=0;v<=ymax+1e-9;v+=.1)s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="12" fill="var(--mut)">${Math.round(v*100)}%</text>`;
+ s+=`<line x1="${L}" x2="${W-R}" y1="${y(.25)}" y2="${y(.25)}" stroke="var(--mut)" stroke-dasharray="5 5"/><line x1="${x(D.split)}" x2="${x(D.split)}" y1="${T}" y2="${H-B}" stroke="var(--line)" stroke-width="2"/>`;
+ s+=`<text x="${x(D.split/2)}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--mut)">${W<520?"Phase 1":"Phase 1: against the first version"}</text><text x="${x((1+D.split)/2)}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--mut)">${W<520?"Phase 2":"Phase 2: against each other too"}</text>`;
+ for(const n of CN)s+=`<polyline fill="none" stroke="${COL[n]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="${D.curves[n].map(p=>x(p[0]).toFixed(1)+","+y(p[1]).toFixed(1)).join(" ")}"/>`;
+ cs.innerHTML=s};
+const roC=new ResizeObserver(drawC);roC.observe(cs);
+// ---------- chapter 3 ----------
+const rank=w=>Object.keys(w).sort((a,b)=>w[b]-w[a]),L5=D.league[5].win,top=rank(L5)[0],oldAvg=AIS.reduce((s,n)=>s+D.vsold[n],0)/AIS.length,E=D.elo,topE=rank(E)[0];
+$("resTitle").textContent=`${N[top]} wins ${pct(L5[top])} of four-player games`;
+$("resLede").textContent=`That is against a mixed table of all eight players with 5 dice each, where an even share is 25%. Every figure on this page comes from games played with the same code that runs at the table.`;
+$("kpis").innerHTML=[[pct(L5[top]),`${N[top]}'s win rate at a four-player table, 5 dice each`],[pct(oldAvg),`average win rate of a new bot against three copies of its first version (25% would mean no change)`],[pct(D.best1v1),`of one-on-one games won by ${N[topE]}, the best head-to-head player`]].map(k=>`<div class="kpi"><b>${k[0]}</b><span>${esc(k[1])}</span></div>`).join("");
+let mode4=5;const bars=(el,w,max,ref,ids)=>{$(el).innerHTML=(ids||rank(w)).map((n,i)=>`<div class="row"><span class="rk">${i+1}</span><span class="nm"><b>${esc(N[n])}</b><span>${esc(METHOD[n])}</span></span><div class="bar ref" style="--ref:${(ref/max*100).toFixed(1)}%"><i style="width:${Math.min(100,w[n]/max*100).toFixed(1)}%;background:${COL[n]}"></i></div><span class="val">${pct(w[n])}</span></div>`).join("")};
+const draw4=()=>{const w=D.league[mode4].win;bars("lb4",w,Math.max(.5,...Object.values(w)),.25);document.querySelectorAll("#seg4 button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.m===mode4))};
+document.querySelectorAll("#seg4 button").forEach(b=>b.onclick=()=>{mode4=+b.dataset.m;draw4()});draw4();
+bars("lbOld",D.vsold,Math.max(.6,...Object.values(D.vsold)),.25,rank(D.vsold));
+$("oldNote").textContent=D.oldNote;
+const er=rank(E),wr=(a,b)=>{const k=D.duel[a+"|"+b];if(k)return k[0]/k[1];const r=D.duel[b+"|"+a];return 1-r[0]/r[1]},hm=$("hm");hm.style.setProperty("--n",er.length);
+let h='<div class="h"></div>'+er.map(n=>`<div class="c">${esc(N[n])}</div>`).join("");
+for(const a of er){h+=`<div class="h">${esc(N[a])}</div>`;for(const b of er){if(a===b){h+='<div style="background:var(--soft)">·</div>';continue}const w=wr(a,b),d=w-.5,al=Math.min(1,Math.abs(d)*2.4);h+=`<div style="background:${d>=0?`rgba(255,90,78,${al})`:`rgba(29,63,214,${al})`};color:${al>.5?"#fff":"inherit"}" title="${esc(N[a])} against ${esc(N[b])}">${pct(w)}</div>`}}
+hm.innerHTML=h;
+const m=(v,c)=>`<span class="meter"><i style="width:${Math.round(v*100)}%;background:${c}"></i></span>${pct(v)}`;
+$("styletab").querySelector("tbody").innerHTML=rank(L5).filter(n=>n!=="random").map(n=>`<tr><td><b><span class="dot" style="background:${COL[n]}"></span>${esc(N[n])}</b></td><td>${m(ST[n].bluff,COL[n])}</td><td>${m(ST[n].call,COL[n])}</td><td>${m(ST[n].right,COL[n])}</td></tr>`).join("");
+$("takeaways").innerHTML=D.takeaways.map(t=>`<div class="rule"><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div>`).join("");
+$("method").textContent=D.method;
+// ---------- chapter 4: the exam ----------
+const X=D.exam,XB=X.bots,r0=v=>Math.round(v)+"%",XO=AIS.concat(["math"]);
+$("exIconA").innerHTML=die(3)+die(5)+'<span class="q">?</span><span class="tick">✓</span>';
+$("exIconB").innerHTML=["ppo"].map(pawn).join("").replace("<svg","<svg style='width:34px;height:40px'")+'<span class="say h">Liar!</span><span class="tick x">✗</span>';
+$("exAbout").textContent=`The last stretch of a game, one on one with up to three dice on the table, is small enough to solve completely. That gives the best move in all ${(X.situations/1e6).toFixed(1)} million situations. Each bot is marked on every one, weighted by how often it comes up.`;
+const bestA=AIS.slice().sort((a,b)=>XB[b].acc[2]-XB[a].acc[2])[0],hT=AIS.filter(n=>XB[n].hunter.table2[2]).sort((a,b)=>XB[a].hunter.table2[2][0]-XB[b].hunter.table2[2][0])[0];
+$("exKpis").innerHTML=[[(X.situations/1e6).toFixed(1)+" million","situations in the answer key, each with a known best move"],[r0(XB[bestA].acc[2]),`of the ${N[bestA]}'s moves match the best move, the top mark on the answer key`],[r0(XB[hT].hunter.table2[2][0]),`of games go to the hunter against the ${N[hT]} at a four-player table with 2 dice each. No current bot does better, and an even share is 25%`]].map(k=>`<div class="kpi"><b>${k[0]}</b><span>${esc(k[1])}</span></div>`).join("");
+let modeA="acc";const cellA=v=>v===null||v===undefined?"–":r0(v);
+const drawA=()=>{$("exA").querySelector("tbody").innerHTML=XO.map(n=>{const v=XB[n][modeA],d=v[0]!==null&&v[2]!==null?Math.round(v[2])-Math.round(v[0]):null;
+  return `<tr><td><b><span class="dot" style="background:${COL[n]}"></span>${esc(N[n])}${XB[n].sampled?"*":""}</b></td><td class="num">${cellA(v[0])}</td><td class="num">${cellA(v[1])}</td><td class="num now">${cellA(v[2])}</td><td class="num">${d===null?"":d===0?"0":`<span class="chg ${d>0?"up":"dn"}">${d>0?"▲":"▼"} ${Math.abs(d)}</span>`}</td></tr>`}).join("");
+ $("exANote").textContent=(modeA==="hard"?`Hard questions are the ${Math.round(X.hardShare*100)}% of decisions where playing the raw odds gives the wrong move, so the Math Bot scores 0% on them by definition. `:`The Math Bot was not retrained, so it has one mark. `)+"* The Thinker is a randomised search with no halfway version. It was marked on sampled rounds, so its figures are good to about 2 points.";
+ document.querySelectorAll("#segA button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===modeA))};
+document.querySelectorAll("#segA button").forEach(b=>b.onclick=()=>{modeA=b.dataset.m;drawA()});drawA();
+const HAB={badCall:"Calls Liar when it should raise",missedCall:"Raises when it should call",badRaise:"Raises to the wrong claim",badOpen:"Opens with the wrong claim"};
+$("exW").querySelector("tbody").innerHTML=XO.slice().sort((a,b)=>XB[a].lost[2]-XB[b].lost[2]).map(n=>{const w=XB[n].where,k=Object.keys(w).sort((a,b)=>w[b]-w[a])[0];
+ return `<tr><td><b><span class="dot" style="background:${COL[n]}"></span>${esc(N[n])}</b></td><td class="num">${XB[n].lost[2].toFixed(1)}</td><td>${esc(HAB[k])} <span style="color:var(--mut)">(${Math.round(w[k])}% of its lost marks)</span></td></tr>`}).join("");
+const BM={table2:["Four players: the hunter and three copies of the bot, 2 dice each. The figure is how often the hunter wins the game. Lower is better for the bot.",25,"an even share"],duel2:["One on one, both starting with 2 dice. The figure is how often the hunter wins the duel. Lower is better for the bot.",50,"what the hunter gets from a bot it cannot exploit"],
+ table1:["Four players: the hunter and three copies of the bot, 1 die each. The figure is how often the hunter wins the game. Lower is better for the bot.",25,"an even share"],duel3:["One on one, both starting with 3 dice. The figure is how often the hunter wins the duel. Lower is better for the bot.",50,"what the hunter gets from a bot it cannot exploit"]};
+let modeB="table2";const hv=c=>c?Math.round(c[0])+"%"+(c[1]>=1?"+":""):null;
+const drawB=()=>{const ids=XO.filter(n=>XB[n].hunter[modeB][2]).sort((a,b)=>XB[a].hunter[modeB][2][0]-XB[b].hunter[modeB][2][0]),ref=BM[modeB][1];
+ $("exB").innerHTML=ids.map((n,i)=>{const h=XB[n].hunter[modeB],was=[["first",h[0]],["halfway",h[1]]].filter(x=>x[1]).map(x=>x[0]+" "+hv(x[1])).join(" · ");
+  return `<div class="row"><span class="rk">${i+1}</span><span class="nm"><b>${esc(N[n])}</b><span>${esc(was||"not retrained")}</span></span><div class="bar ref" style="--ref:${ref}%"><i style="width:${Math.min(100,h[2][0]).toFixed(1)}%;background:${COL[n]}"></i></div><span class="val">${hv(h[2])}</span></div>`}).join("");
+ $("exBSub").textContent=BM[modeB][0];const og=X.orig[modeB];
+ $("exBNote").textContent=`The line marks ${ref}%, ${BM[modeB][2]}. A plus sign means "at least": that bot mixes its play too much to pin the figure down. The Thinker has no hunter score because its move chances cannot be written down exactly.`+(og?(og[2]<5?` Of the five original 2-dice bots, which the current ones replaced, the ${og[2]} that could be pinned down score ${og[0]}% to ${og[1]}% here.`:` The original 2-dice bots, which the current ones replaced, score ${og[0]}% to ${og[1]}% here.`):"");
+ document.querySelectorAll("#segB button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===modeB))};
+document.querySelectorAll("#segB button").forEach(b=>b.onclick=()=>{modeB=b.dataset.m;drawB()});drawB();
+$("exTake").innerHTML=X.takeaways.map(t=>`<div class="rule"><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div>`).join("");
+$("exMethod").textContent=X.method;
+}
+</script>
+<!--TABLESCRIPT-->
+</body></html>

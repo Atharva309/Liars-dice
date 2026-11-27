@@ -1,0 +1,10 @@
+{'step': 30720, 'vs_math': 0.4, 'sec': 21}
+{'step': 61440, 'vs_math': 0.442, 'sec': 39}
+{'step': 92160, 'vs_math': 0.412, 'sec': 57}
+{'step': 122880, 'vs_math': 0.338, 'sec': 75}
+{'step': 153600, 'vs_math': 0.342, 'sec': 92}
+{'step': 184320, 'vs_math': 0.287, 'sec': 110}
+{'step': 215040, 'vs_math': 0.325, 'sec': 127}
+{'step': 245760, 'vs_math': 0.408, 'sec': 145}
+{'step': 276480, 'vs_math': 0.362, 'sec': 162}
+{'step': 307200, 'vs_math': 0.342, 'sec': 180}

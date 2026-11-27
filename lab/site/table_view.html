@@ -1,0 +1,158 @@
+<style>
+/* TABLE VIEW: a first-person seat in a lamp-lit dice hall. Always night: the lamp and neon are the light. */
+.nav{position:sticky;top:0;z-index:20;display:flex;gap:6px;padding:10px max(5vw,16px);background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto}
+.nav a{font:700 15px Archivo,sans-serif;color:var(--ink);text-decoration:none;padding:10px 16px;border-radius:999px;min-height:44px;display:inline-flex;align-items:center}
+.nav a{flex:none}.nav a[aria-current=page]{background:var(--ink);color:var(--bg)}
+.nav a.playtab{margin-left:auto;background:var(--hot);color:#fff}.nav a.playtab[aria-current=page]{background:var(--hot);color:#fff;box-shadow:inset 0 0 0 3px #0b144055}
+.nav a:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+@media(max-width:480px){.nav{gap:3px;padding-inline:10px}.nav a{padding:10px 9px;font-size:14px}}
+.cta{display:inline-flex;align-items:center;min-height:44px;margin:16px 10px 0 0;padding:0 18px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700;text-decoration:none}
+#view-table{position:relative;height:calc(100vh - 65px);height:calc(100dvh - 65px);min-height:580px;background:#070919;overflow:hidden;color:#fff;font:16px/1.4 Archivo,system-ui,sans-serif}
+#view-table button,#view-table select,#view-table summary{font:600 16px Archivo,system-ui,sans-serif;min-height:44px;border-radius:12px;border:0;cursor:pointer}
+#view-table :focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+#stage{position:absolute;inset:0}#stage canvas{display:block;width:100%;height:100%}
+#stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,#040512b3 100%)}
+#overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag,.bubble{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform}
+.tag{font-size:13px;font-weight:700;background:#0b1440e6;padding:4px 10px;border-radius:999px;display:flex;gap:6px;align-items:center;border:2px solid transparent}
+.tag i{width:9px;height:9px;border-radius:50%}.tag b{font-weight:700}
+.tag .pips{display:inline-flex;gap:3px}.tag .pips s{width:9px;height:9px;border-radius:2px;background:#fbfaf7;display:block}
+.tag.on{border-color:#ffd08a;background:#1a2466}.tag.out{opacity:.5}.tag.out b{text-decoration:line-through}
+.bb{position:relative;background:#fbfaf7;color:#0b1440;font:400 19px "Archivo Black",Archivo,sans-serif;padding:7px 13px;border-radius:14px;box-shadow:0 8px 20px #0007;display:flex;align-items:center;gap:6px;transform-origin:50% 100%;animation:pop .28s cubic-bezier(.3,1.5,.5,1)}
+.bb::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-top-color:#fbfaf7;border-bottom:0}
+.bb svg{width:26px;height:26px;display:block}
+.bubble[hidden]{display:none}
+.bubble.past .bb{opacity:.6;transform:scale(.76);animation:none;box-shadow:none}
+.bubble.liar .bb{background:var(--hot);color:#fff;font-size:24px}.bubble.liar .bb::after{border-top-color:var(--hot)}
+.bubble.think .bb{padding:12px 14px;gap:5px;opacity:.92}.bubble.think i{width:7px;height:7px;border-radius:50%;background:#0b1440;animation:dot 1s infinite}.bubble.think i:nth-child(2){animation-delay:.15s}.bubble.think i:nth-child(3){animation-delay:.3s}
+@keyframes pop{from{transform:scale(.5);opacity:0}}@keyframes dot{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.tb{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:4}
+.tb>*{pointer-events:auto}
+.claim{background:#0b1440eb;border-radius:14px;padding:8px 14px;min-width:148px}
+.claim small{display:block;font-size:13px;color:#b9c2f0}
+.claim b{font:400 22px/1.2 "Archivo Black",Archivo,sans-serif;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.claim b svg{width:28px;height:28px}.claim b span{font:600 15px Archivo,sans-serif;color:#dfe5ff}
+.tools{display:flex;gap:8px}
+.tbtn,#view-table summary.tbtn{background:#0b1440eb;color:#fff;padding:0 14px;display:inline-flex;align-items:center;list-style:none}
+summary.tbtn::-webkit-details-marker{display:none}
+.menu{position:relative}.menu .pop{position:absolute;right:0;top:52px;background:#111c4d;border-radius:14px;padding:8px;display:grid;gap:6px;min-width:210px;box-shadow:0 20px 40px #000a}
+.menu .pop button{background:#ffffff14;color:#fff;text-align:left;padding:0 12px}
+.dock{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:min(980px,calc(100% - 20px));display:grid;gap:8px;justify-items:center;z-index:3;pointer-events:none}.dock>*{pointer-events:auto}
+.verdict{background:#fbfaf7;color:#0b1440;border-radius:16px;padding:10px 20px;text-align:center;max-width:min(100%,560px);box-shadow:0 12px 30px #0009;animation:pop .25s;transform-origin:50% 100%}
+.verdict b{font:400 clamp(21px,3.4vw,28px)/1.15 "Archivo Black",Archivo,sans-serif;display:block}.verdict span{font-size:15px;display:block;margin-top:2px}
+.verdict.f{background:var(--hot);color:#fff}.verdict.t{background:#ffd08a}
+.verdict[hidden]{display:none}
+.logp{position:absolute;top:74px;left:10px;z-index:3;width:min(290px,72vw);max-height:42%;overflow:auto;background:#0b1440f2;border-radius:14px;padding:6px 12px;font-size:14px}
+.logp[hidden]{display:none}.logp ul{list-style:none;margin:0;padding:0}.logp li{padding:5px 0;border-bottom:1px solid #ffffff1a;display:flex;justify-content:space-between;gap:10px}.logp li.hd{font-weight:700;color:#ffd08a}.logp li b{white-space:nowrap}
+.hud{min-width:min(600px,100%);max-width:100%;background:#0b1440eb;border-radius:18px;padding:12px 14px;display:grid;gap:10px;border:2px solid transparent}
+.hud.myturn{border-color:#ffd08a}
+.hud .top{display:flex;gap:14px;align-items:center;justify-content:space-between}
+.msg{font-size:16px;line-height:1.38}.msg em{font-style:normal;font-weight:700;color:#ffd08a}
+.mine{display:flex;gap:5px;align-items:center;flex:none}.mine svg{width:32px;height:32px;display:block}
+.hidn{display:grid;grid-template-rows:repeat(3,9px);grid-auto-flow:column;gap:3px}.hidn s{width:9px;height:9px;border-radius:2px;background:#ffffff61;display:block}
+.lbl{font-size:13px;color:#b9c2f0;flex:none}
+.build{display:grid;gap:10px}.build[hidden]{display:none}
+.pickrow{display:flex;gap:8px 20px;flex-wrap:wrap}.actrow{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap}.actrow .acts{flex:1 1 380px}
+.line{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center}
+.line>div{display:flex;gap:6px;overflow-x:auto;padding:2px}
+.hud .line button{background:#ffffff1f;color:#fff;min-width:46px;flex:none;padding:0 6px}
+.hud .line button[aria-pressed=true]{background:#fbfaf7;color:#0b1440}.hud .line button:disabled{opacity:.25;cursor:not-allowed}
+.hud .line button.fc{padding:0 4px}.hud .fc svg{width:36px;height:36px;display:block}
+.odds{display:flex;align-items:center;gap:10px;font-size:14px;color:#dfe5ff;flex:1 1 300px}.odds[hidden]{display:none}
+.odds .bar{flex:none;width:110px;height:8px;border-radius:4px;background:#ffffff26;overflow:hidden}.odds i{display:block;height:100%;background:#ffd08a;border-radius:4px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts button{padding:0 16px;flex:1 1 180px}.acts button[hidden]{display:none}
+.go{background:#fbfaf7;color:#0b1440}.liarb{background:var(--hot);color:#fff}.plain{background:#ffffff26;color:#fff}
+.acts button:disabled{opacity:.35;cursor:not-allowed}
+.lobby,.help{position:absolute;inset:0;display:grid;place-items:center;background:#070919b3;z-index:5;padding:14px;overflow:auto}
+.lobby[hidden],.help[hidden]{display:none}
+.box{background:#111c4d;border-radius:20px;padding:clamp(16px,3vw,28px);width:min(580px,100%);box-shadow:0 30px 60px #0009}
+.box h2{color:#fff;font-size:clamp(24px,4vw,30px);margin-bottom:10px}
+.how{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:8px;color:#d6dcfa;font-size:15px;counter-reset:n}
+.how li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;counter-increment:n}
+.how li::before{content:counter(n);width:28px;height:28px;border-radius:50%;background:#ffd08a;color:#0b1440;font-weight:700;display:grid;place-items:center}
+.how b{color:#fff}.how svg{width:20px;height:20px;vertical-align:-4px}
+.segrow{display:flex;gap:12px;align-items:center;font-weight:600;margin-bottom:12px}.seg{display:flex;gap:6px;flex:1}
+#view-table .seg button{flex:1;background:#ffffff1a;color:#fff;display:grid;place-items:center;padding:4px 6px;line-height:1.1;font-size:18px}.seg small{font-size:12px;font-weight:400;color:#c3cbf0}
+#view-table .seg button[aria-pressed=true]{background:#fbfaf7;color:#0b1440}.seg button[aria-pressed=true] small{color:#3a4680}
+.seatpick{display:grid;gap:8px;margin-bottom:12px}
+.n{display:none}
+.seatpick label{display:grid;grid-template-columns:4.2em minmax(0,1fr) 5em;gap:2px 10px;align-items:center;font-weight:600}
+.seatpick select{background:#fbfaf7;color:#0b1440;padding:0 10px}
+.seatpick b{font-size:13px;color:#c3cbf0;font-weight:600;text-align:right;white-space:nowrap}
+.seatpick small{grid-column:2/4;font-size:13px;color:#a9b3e0;font-weight:400}
+.chk{display:flex;gap:10px;align-items:center;font-size:15px;color:#d6dcfa;margin-bottom:14px;min-height:32px}.chk input{width:20px;height:20px;flex:none}
+.deal{background:var(--hot);color:#fff;padding:0 22px;font-size:17px!important;min-height:48px!important}
+.deal:disabled{opacity:.6}
+.small{font-size:13px;color:#a9b3e0;margin-top:12px}
+@media(max-width:640px){
+ .dock{bottom:6px}.hud{padding:10px;gap:8px}.pickrow{display:grid}.msg{font-size:15px}.hud .top{align-items:flex-start;flex-wrap:wrap;gap:6px 14px}.mine{flex:1 1 100%}.mine .hidn{display:none}.mine svg{width:27px;height:27px}
+ .tag{font-size:12px;padding:3px 8px;gap:5px}.tag .pips{gap:2px}.tag .pips s{width:6px;height:6px}
+ .hud.myturn .mine,.w{display:none}.n{display:inline}.acts button{flex:1 1 130px;line-height:1.15;padding:6px 10px}.actrow .acts{flex:1 1 100%}.odds{flex:1 1 100%}
+ .line{grid-template-columns:3.6em minmax(0,1fr)}.line>div{gap:4px}.hud .line button{min-width:40px}.hud .line button.fc{padding:0 2px}.hud .fc svg{width:34px;height:34px}.claim b{font-size:19px}.bb{font-size:16px}.bubble.liar .bb{font-size:19px}.tbtn{padding:0 11px}
+ .seatpick label{grid-template-columns:3.6em minmax(0,1fr) 4.4em}
+}
+@media(prefers-reduced-motion:reduce){.bb,.verdict{animation:none}.bubble.think i{animation:none;opacity:.7}}
+</style>
+<div id="view-table" hidden>
+<div id="stage" aria-label="3D view of the dice table"></div>
+<div id="overlay"></div>
+<div class="tb">
+ <div class="claim" id="claim" aria-live="polite"><small>Liar's Dice</small><b>Take a seat</b></div>
+ <div class="tools"><button class="tbtn" id="helpBtn"><span class="w">How to play</span><span class="n">Help</span></button>
+  <details class="menu" id="menu"><summary class="tbtn">Menu</summary><div class="pop">
+   <button id="coachBtn">Coach tips: on</button><button id="sndBtn">Sound: on</button><button id="spdBtn">Speed: normal</button><button id="logBtn">Show table log</button><button id="lobbyBtn">Change opponents</button>
+  </div></details></div>
+</div>
+<aside class="logp" id="logp" hidden aria-label="Table log"><ul id="log4"></ul></aside>
+<div class="dock" id="dock">
+<div class="verdict" id="verdict" hidden aria-live="polite"></div>
+<div class="hud" id="hud">
+ <div class="top"><div class="msg" id="msg4" aria-live="polite">Setting the table…</div><div class="mine" id="mine"></div></div>
+ <div class="build" id="build" hidden>
+  <div class="pickrow"><div class="line"><span class="lbl"><span class="w" id="ofall">Of all 8 dice, </span>at least</span><div id="qty4"></div></div>
+  <div class="line"><span class="lbl">show</span><div id="face4"></div></div></div>
+  <div class="actrow"><div class="odds" id="odds"><span class="bar"><i id="oddsbar"></i></span><span id="oddstxt"></span></div>
+  <div class="acts"><button class="go" id="bid4">Claim</button><button class="liarb" id="liar4">Liar!</button></div></div>
+ </div>
+ <div class="acts"><button class="go" id="next4" hidden>Next round</button><button class="go" id="again4" hidden>Play again</button></div>
+</div>
+</div>
+<div class="lobby" id="lobby"><div class="box">
+ <h2>Take a seat</h2>
+ <ol class="how">
+  <li><span><b>Everyone hides their dice under a cup.</b> You only see your own.</span></li>
+  <li><span><b>Claim or challenge.</b> Turns go clockwise. On your turn, claim how many dice of one number are on the <b>whole table, counting every cup</b>, like "at least 3 fives". Each claim must beat the last one. Or call <b>Liar!</b> on the claim before you.</span></li>
+  <li><span><b>Cups up.</b> If the claim was true, the caller loses a die. If it was false, the claimer does. Last player with dice wins.</span></li>
+ </ol>
+ <div class="segrow"><span>Dice each</span><div class="seg" id="diceSeg"><button data-d="2">2<small>Quick</small></button><button data-d="3">3<small>Medium</small></button><button data-d="5">5<small>Classic</small></button></div></div>
+ <div class="seatpick" id="seatpick"></div>
+ <label class="chk"><input type="checkbox" id="coachChk" checked> Coach tips: show the odds and a suggested move on my turn</label>
+ <button class="deal" id="dealBtn">Deal me in</button>
+ <div class="small" id="lobbyNote"></div>
+</div></div>
+<div class="help" id="help" hidden><div class="box">
+ <h2>How to play</h2>
+ <ol class="how">
+  <li><span><b>Hidden dice.</b> Each player rolls their dice under a cup: 2, 3 or 5 each, your choice. You see only yours, on the rack in front of you.</span></li>
+  <li><span><b>A claim is about every die on the table.</b> "At least 3 fives" means: counting all cups together, three or more dice show a five. You don't need to hold them yourself, which is why you can claim more dice than you own.</span></li>
+  <li><span><b>Raise it.</b> A new claim must be higher: more dice ("3 fives" to "4 twos"), or the same count with a higher number ("3 fives" to "3 sixes").</span></li>
+  <li><span><b>Or call Liar!</b> on the claim just before yours. All cups lift and the dice are counted.</span></li>
+  <li><span><b>Someone loses a die, and nobody ever gains one.</b> Claim true: the caller loses one. Claim false: the claimer loses one. No dice left and you're out. Last player in wins.</span></li>
+  <li><span><b>Rule of thumb.</b> Each hidden die shows any given number 1 time in 6. Divide the hidden dice by 6 to see how many of a number to expect out there, then add your own.</span></li>
+ </ol>
+ <button class="deal" id="helpClose">Got it</button>
+</div></div>
+</div>
+<script>
+window.LD_WIN=/*T4*/;
+{
+const views={tour:document.getElementById("view-tour"),table:document.getElementById("view-table")};let loading=null;
+const load=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+function route(){const t=location.hash==="#table"?"table":"tour";views.tour.hidden=t!=="tour";views.table.hidden=t!=="table";
+ document.querySelectorAll(".nav a").forEach(a=>a.setAttribute("aria-current",a.dataset.v===t?"page":"false"));
+ if(t==="table"){if(window.LDTable)window.LDTable.resume();else if(!loading)loading=load("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js").then(()=>load("table.js")).catch(()=>{loading=null;document.getElementById("msg4").textContent="Couldn't load the 3D table. Check your connection and reopen this tab."})}
+ else if(window.LDTable)window.LDTable.pause()}
+addEventListener("hashchange",route);route();
+}
+</script>

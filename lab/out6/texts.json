@@ -1,0 +1,18 @@
+{
+ "takeaways": [
+  [
+   "The retraining worked",
+   "In one mixed field of all twelve bots, new and old, the new ones won 29% of their games and the first versions 21%. Every new bot finished ahead of its old self, though the Game Theorist's edge (19% against 18%) is too small to be sure of."
+  ],
+  [
+   "The Thinker gained the most",
+   "It went from 12% to 27% in the mixed field, and wins 53% of its games against three copies of its old self. It now weighs the hidden dice by the bidding and plays its simulations out with a learned model of the others."
+  ],
+  [
+   "The Gut Player is the one to beat",
+   "It tops the four-player standings at 5, 3 and 2 dice (39%, 39%, 38%) and has the best one-on-one rating. Head to head the field is much tighter: only the Gut Player and the Exploiter are clearly ahead of the Math Bot. The learners practised at four-player tables, and it shows."
+  ]
+ ],
+ "method": "Four-player standings: 2,500 games per dice count, seats drawn at random from all eight players, so about 1,250 games per bot and a margin of roughly 2 points either way. Mixed field: 2,500 games, about 830 per bot (margin 3 points). New against old: 500 games per bot (margin 4 points). One on one: 120 games per pairing (margin 9 points per cell). Every game was played by the same JavaScript that runs the table. Training ran on one CPU core per bot with plain NumPy.",
+ "oldNote": "The line marks 25%. In a mixed field of all twelve bots, the new ones averaged 29% and their first versions 21%."
+}

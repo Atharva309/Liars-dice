@@ -1,0 +1,1 @@
+{"win":{"cfr":0.301,"dqn":0.38,"ppo":0.359,"nfsp":0.276,"ismcts":0.203,"mc":0.316,"math":0.161,"random":0},"played":{"cfr":1978,"dqn":2030,"ppo":1974,"nfsp":2051,"ismcts":1989,"mc":1999,"math":2017,"random":1962},"games":4000}

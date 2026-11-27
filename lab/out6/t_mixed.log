@@ -1,0 +1,1 @@
+mixed 5 dice: {"new:cfr":0.192,"new:dqn":0.365,"new:ppo":0.365,"new:nfsp":0.291,"new:mc":0.246,"new:ismcts":0.271,"old:cfr":0.178,"old:dqn":0.293,"old:ppo":0.26,"old:nfsp":0.217,"old:mc":0.2,"old:ismcts":0.123} | 478s
